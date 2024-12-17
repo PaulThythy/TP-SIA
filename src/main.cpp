@@ -97,7 +97,7 @@ vec3 materialSpecularColor(1., .1, 1); // couleur du materiau
 vec3 LightPosition(1., 0., .5);
 vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
 GLfloat LightAttenuation = 1.;
-GLfloat LightAmbientCoefficient = 5.0;
+GLfloat LightAmbientCoefficient = .1;
 
 glm::mat4 MVP; // justement la voilà
 glm::mat4 Model, View, Projection; // Matrices constituant MVP

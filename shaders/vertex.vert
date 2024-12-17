@@ -18,7 +18,7 @@ void main(){
     vec4 posWorld = MODEL * vec4(position, 1.0);
     fragPosition = posWorld.xyz;
 
-    mat3 normalMatrix = mat3(transpose(inverse(MODEL)));
+    mat3 normalMatrix = transpose(inverse(mat3(MODEL)));
     fragNormal = normalize(normalMatrix * normal);
 
     fragUV = uv;
