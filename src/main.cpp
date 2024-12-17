@@ -204,7 +204,7 @@ void initTexture(void)
   int iwidth, iheight;
   GLubyte * image = NULL;
 
-  image = glmReadPPM("texture/MetalNRM.ppm", &iwidth, &iheight);
+  image = glmReadPPM("texture/Snoopy2.ppm", &iwidth, &iheight);
   glGenTextures(1, &bufTexture);
   glBindTexture(GL_TEXTURE_2D, bufTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -224,7 +224,7 @@ void initOpenGL(void)
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
   // le shader
-  programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
+  programID = LoadShaders("shaders/phongWithTexture/vertex.vert", "shaders/phongWithTexture/fragment.frag");
 
   // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
   MatrixIDMVP = glGetUniformLocation(programID, "MVP");
