@@ -224,7 +224,7 @@ void initOpenGL(void)
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
   // le shader
-  programID = LoadShaders("shaders/phongWithTexture/vertex.vert", "shaders/phongWithTexture/fragment.frag");
+  programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
 
   // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
   MatrixIDMVP = glGetUniformLocation(programID, "MVP");
@@ -492,7 +492,7 @@ void clavier(unsigned char touche, int x, int y) {
     break;
   case 'r':
     /* reload le shader */
-    programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
+    programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
     glUseProgram(programID); 
     glutPostRedisplay();
     break;
