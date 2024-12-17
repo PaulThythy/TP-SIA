@@ -490,6 +490,12 @@ void clavier(unsigned char touche, int x, int y) {
     LightAmbientCoefficient += .1;
     glutPostRedisplay();
     break;
+  case 'r':
+    /* reload le shader */
+    programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
+    glUseProgram(programID); 
+    glutPostRedisplay();
+    break;
 
   case 'q':
     /*la touche 'q' permet de quitter le programme */
