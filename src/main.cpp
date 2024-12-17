@@ -204,7 +204,7 @@ void initTexture(void)
   int iwidth, iheight;
   GLubyte * image = NULL;
 
-  image = glmReadPPM("texture/Metalcolor.ppm", &iwidth, &iheight);
+  image = glmReadPPM("texture/MetalNRM.ppm", &iwidth, &iheight);
   glGenTextures(1, &bufTexture);
   glBindTexture(GL_TEXTURE_2D, bufTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
