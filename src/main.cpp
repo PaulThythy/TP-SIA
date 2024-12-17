@@ -253,9 +253,7 @@ int main(int argc, char ** argv)
 //----------------------------------------
 {
 
-  /* initialisation de glut et creation
-     de la fenetre */
-
+  /* initialisation de glut et creation de la fenetre */
   glutInit( & argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(200, 200);
@@ -347,11 +345,11 @@ void genereVBO() {
 void deleteVBO()
 //-----------------
 {
-  glDeleteBuffers(1, & VBO_sommets);
-  glDeleteBuffers(1, & VBO_normales);
-  glDeleteBuffers(1, & VBO_indices);
-  glDeleteBuffers(1, & VBO_UVtext);
-  glDeleteBuffers(1, & VAO);
+  glDeleteBuffers(1, &VBO_sommets);
+  glDeleteBuffers(1, &VBO_normales);
+  glDeleteBuffers(1, &VBO_indices);
+  glDeleteBuffers(1, &VBO_UVtext);
+  glDeleteBuffers(1, &VAO);
 }
 
 /* fonction d'affichage */

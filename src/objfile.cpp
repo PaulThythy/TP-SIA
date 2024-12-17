@@ -24,7 +24,7 @@ OBJFile::~OBJFile(void)
 ostream& operator<<(ostream& os, const OBJFile& OBJf)
 {
 
- }
+}
 //-------------------------------------------
 
 void OBJFile::readData(void)
