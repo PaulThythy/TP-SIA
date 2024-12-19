@@ -226,7 +226,7 @@ void initOpenGL(void)
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
   // le shader
-  programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
+  programID = LoadShaders("shaders/toon/vertex.vert", "shaders/toon/fragment.frag");
 
   // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
   MatrixIDMVP = glGetUniformLocation(programID, "MVP");
