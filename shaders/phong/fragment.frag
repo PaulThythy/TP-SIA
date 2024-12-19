@@ -2,14 +2,12 @@
 
 in vec3 fragPosition;
 in vec3 fragNormal;
-in vec2 fragUV;
 
 uniform vec3 cameraPosition;
 
-uniform mat4 MODEL;
-
 uniform float materialShininess;
 uniform vec3 materialSpecularColor;
+uniform vec3 materialAlbedo;
 
 uniform struct Light {
 	vec3 position;
@@ -42,12 +40,13 @@ void main() {
     float specAngle = max(dot(R, V), 0.0);
     vec3 specular = pow(specAngle, materialShininess) * materialSpecularColor * light.intensities;
 
-    // Attenuation si souhaitée
+    // Attenuation (optionnelle)
     float dist = length(light.position - fragPosition);
     float attenuation = 1.0 / (1.0 + light.attenuation * dist * dist);
 
     vec3 lightColor = (ambient + diffuse + specular) * attenuation;
 
-    // Couleur finale
-    finalColor = vec4(lightColor, 1.0);
+    // Couleur finale sans texture
+    finalColor = vec4(lightColor * materialAlbedo, 1.0);
+
 }

@@ -75,6 +75,7 @@ GLuint VBO_sommets, VBO_normales, VBO_indices, VBO_UVtext, VAO;
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
 GLuint locmaterialSpecularColor;
+GLuint locmaterialAlbedo;
 GLuint locLightPosition;
 GLuint locLightIntensities; //a.k.a the color of the light
 GLuint locLightAttenuation;
@@ -90,7 +91,8 @@ vec3 cameraPosition(0., 0., 3.);
 // le matériau
 //---------------
 GLfloat materialShininess = 3.;
-vec3 materialSpecularColor(1., .1, 1); // couleur du materiau
+vec3 materialSpecularColor(1., .1, 1); 
+vec3 materialAlbedo(1, 0, 0);                 // couleur du materiau
 
 // la lumière
 //-----------
@@ -241,6 +243,7 @@ void initOpenGL(void)
 
   locmaterialShininess = glGetUniformLocation(programID, "materialShininess");
   locmaterialSpecularColor = glGetUniformLocation(programID, "materialSpecularColor");
+  locmaterialAlbedo = glGetUniformLocation(programID, "materialAlbedo");
   locLightPosition = glGetUniformLocation(programID, "light.position");
   locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
@@ -399,6 +402,7 @@ void traceObjet()
 
   glUniform1f(locmaterialShininess,materialShininess);
   glUniform3f(locmaterialSpecularColor,materialSpecularColor.x,materialSpecularColor.y,materialSpecularColor.z);
+  glUniform3f(locmaterialAlbedo, materialAlbedo.x, materialAlbedo.y, materialAlbedo.z);
   glUniform3f(locLightPosition,LightPosition.x,LightPosition.y,LightPosition.z);
   glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
   glUniform1f(locLightAttenuation,LightAttenuation);

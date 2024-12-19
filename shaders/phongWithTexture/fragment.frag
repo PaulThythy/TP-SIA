@@ -11,6 +11,7 @@ uniform mat4 MODEL;
 
 uniform float materialShininess;
 uniform vec3 materialSpecularColor;
+uniform vec3 materialAlbedo;
 
 uniform struct Light {
 	vec3 position;
@@ -53,5 +54,6 @@ void main() {
     vec4 texColor = texture(textureSampler, fragUV);
 
     // Couleur finale
-    finalColor = vec4(lightColor, 1.0) * texColor;
+    finalColor = vec4(lightColor * materialAlbedo, 1.0) * texColor;
+
 }
