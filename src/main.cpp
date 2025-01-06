@@ -274,7 +274,7 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
+  programID = LoadShaders("shaders/toonOutlines/vertex.vert", "shaders/toonOutlines/fragment.frag");
   initOpenGL(programID);
 
   createTorus(1., .3);
@@ -359,7 +359,7 @@ void affichage() {
 
   /* effacement de l'image avec la couleur de fond */
   /* Initialisation d'OpenGL */
-  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClearColor(1.0, 1.0, 1.0, 1.0);
   glClearDepth(10.0f); // 0 is near, >0 is far
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glColor3f(1.0, 1.0, 1.0);
