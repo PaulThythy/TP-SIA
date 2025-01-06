@@ -92,7 +92,7 @@ vec3 cameraPosition(0., 0., 3.);
 //---------------
 GLfloat materialShininess = 3.;
 vec3 materialSpecularColor(1., .1, 1); 
-vec3 materialAlbedo(1, 0, 0);                 // couleur du materiau
+vec3 materialAlbedo(1, 1, 1);                 // couleur du materiau
 
 // la lumière
 //-----------
@@ -206,7 +206,7 @@ void initTexture(GLuint programID)
   int iwidth, iheight;
   GLubyte * image = NULL;
 
-  image = glmReadPPM("texture/Snoopy2.ppm", &iwidth, &iheight);
+  image = glmReadPPM("skybox/back.ppm", &iwidth, &iheight);
   glGenTextures(1, &bufTexture);
   glBindTexture(GL_TEXTURE_2D, bufTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -274,7 +274,7 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/toonOutlines/vertex.vert", "shaders/toonOutlines/fragment.frag");
+  programID = LoadShaders("shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag");
   initOpenGL(programID);
 
   createTorus(1., .3);
