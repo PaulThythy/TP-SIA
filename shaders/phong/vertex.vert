@@ -1,6 +1,5 @@
 #version 450
 
-
 uniform mat4 MVP;
 uniform mat4 MODEL;
 
@@ -10,7 +9,7 @@ layout(location = 2) in vec3 normal;
 out vec3 fragPosition;
 out vec3 fragNormal;
 
-void main(){
+void main() {
     gl_Position = MVP * vec4(position, 1.0);
 
     vec4 posWorld = MODEL * vec4(position, 1.0);

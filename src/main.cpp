@@ -200,7 +200,7 @@ GLubyte * glmReadPPM(char * filename, int * width, int * height)
 }
 
 //----------------------------------------
-void initTexture(void)
+void initTexture(GLuint programID)
 //-----------------------------------------
 {
   int iwidth, iheight;
@@ -219,14 +219,12 @@ void initTexture(void)
   glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
 }
 //----------------------------------------
-void initOpenGL(void)
+void initOpenGL(GLuint programID)
 //----------------------------------------
 {
   glCullFace(GL_BACK); // on spécifie queil faut éliminer les face arriere
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
-  // le shader
-  programID = LoadShaders("shaders/toon/vertex.vert", "shaders/toon/fragment.frag");
 
   // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
   MatrixIDMVP = glGetUniformLocation(programID, "MVP");
@@ -261,7 +259,7 @@ int main(int argc, char ** argv)
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(200, 200);
   glutInitWindowSize(screenWidth, screenHeight);
-  glutCreateWindow("CUBE VBO SHADER ");
+  glutCreateWindow("EXERCICES SHADERS");
 
   // Initialize GLEW
   if (glewInit() != GLEW_OK) {
@@ -276,13 +274,14 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  initOpenGL();
+  programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
+  initOpenGL(programID);
 
   createTorus(1., .3);
 
   // construction des VBO a partir des tableaux du cube deja construit
   genereVBO();
-  initTexture();
+  initTexture(programID);
 
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);
@@ -496,8 +495,16 @@ void clavier(unsigned char touche, int x, int y) {
     break;
   case 'r':
     /* reload le shader */
+    programID = LoadShaders("shaders/toon/vertex.vert", "shaders/toon/fragment.frag");
+    glUseProgram(programID); 
+    initOpenGL(programID);
+    glutPostRedisplay();
+    break;
+  case 'R':
+    /* reload le shader */
     programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
     glUseProgram(programID); 
+    initOpenGL(programID);
     glutPostRedisplay();
     break;
 
