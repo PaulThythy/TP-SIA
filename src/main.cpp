@@ -17,6 +17,7 @@
 #include <math.h>
 #include "shader.hpp"
 #include <string.h>
+#include <vector>
 
 // Include GLM
 #include "../glm/glm.hpp"
@@ -112,6 +113,12 @@ int screenWidth = 500;
 GLuint image;
 GLuint bufTexture, bufNormalMap;
 GLuint locationTexture, locationNormalMap;
+
+// pour la map d'environnement 
+//-------------------
+GLuint bufSkybox;
+GLuint locSkybox;
+
 //-------------------------
 void createTorus(float R, float r) {
   float theta, phi;
@@ -206,7 +213,7 @@ void initTexture(GLuint programID)
   int iwidth, iheight;
   GLubyte * image = NULL;
 
-  image = glmReadPPM("skybox/back.ppm", &iwidth, &iheight);
+  image = glmReadPPM("texture/opengl.ppm", &iwidth, &iheight);
   glGenTextures(1, &bufTexture);
   glBindTexture(GL_TEXTURE_2D, bufTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -218,6 +225,56 @@ void initTexture(GLuint programID)
   locationTexture = glGetUniformLocation(programID, "textureSampler"); // et il y a la texture elle même  
   glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
 }
+
+void initSkybox(GLuint programID) 
+{
+  glGenTextures(1, &bufSkybox);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, bufSkybox);
+  std::vector<std::string> faces = {
+    "skybox/right.ppm",  // GL_TEXTURE_CUBE_MAP_POSITIVE_X
+    "skybox/left.ppm",   // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+    "skybox/top.ppm",    // GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+    "skybox/bottom.ppm", // GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+    "skybox/front.ppm",  // GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+    "skybox/back.ppm"    // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+  };
+
+  for (int i = 0; i < 6; i++) {
+    int w, h;
+    GLubyte* data = glmReadPPM(const_cast<char*>(faces[i].c_str()), &w, &h);
+    if (!data) {
+        std::cerr << "Failed to load " << faces[i] << std::endl;
+        continue;
+    }
+
+    // On transfère l’image dans la face i de la cube map
+    glTexImage2D(
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+        0,              // mipmap level
+        GL_RGB,         // format interne
+        w, h,           // dimensions
+        0,              // border
+        GL_RGB,         // format source
+        GL_UNSIGNED_BYTE,// type
+        data            // pixels
+    );
+
+    // Libération de l’image en RAM (si vous n’en avez plus besoin)
+    delete[] data;
+  }
+
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, bufSkybox);
+
+  locSkybox = glGetUniformLocation(programID, "skybox");
+}
+
 //----------------------------------------
 void initOpenGL(GLuint programID)
 //----------------------------------------
@@ -282,6 +339,7 @@ int main(int argc, char ** argv)
   // construction des VBO a partir des tableaux du cube deja construit
   genereVBO();
   initTexture(programID);
+  initSkybox(programID);
 
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);

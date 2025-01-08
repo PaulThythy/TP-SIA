@@ -7,6 +7,7 @@ in vec2 fragUV;
 uniform vec3 cameraPosition;
 
 uniform sampler2D textureSampler;
+uniform samplerCube skybox;
 uniform mat4 MODEL;
 
 uniform float materialShininess;
@@ -23,9 +24,13 @@ uniform struct Light {
 out vec4 finalColor;
 
 void main() {
-    float ratio = 1.00 / 1.52;
     vec3 I = normalize(fragPosition - cameraPosition);
-    vec3 R = refract(I, normalize(fragNormal), ratio);
-    finalColor = vec4(texture(textureSampler, R).rgb, 1.0);
 
+    vec3 N = normalize(fragNormal);
+
+    vec3 R = reflect(-I, N);
+
+    vec3 envColor = texture(skybox, R).rgb;
+
+    finalColor = vec4(envColor, 1.0);
 }
