@@ -331,7 +331,7 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag");
+  programID = LoadShaders("shaders/gooch/vertex.vert", "shaders/gooch/fragment.frag");
   initOpenGL(programID);
 
   createTorus(1., .3);
