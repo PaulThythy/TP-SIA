@@ -28,7 +28,7 @@ void main() {
 
     vec3 N = normalize(fragNormal);
 
-    vec3 R = reflect(-I, N);
+    vec3 R = reflect(I, N);
 
     vec3 envColor = texture(skybox, R).rgb;
 
