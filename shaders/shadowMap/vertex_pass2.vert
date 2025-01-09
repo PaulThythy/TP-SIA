@@ -13,8 +13,8 @@ uniform mat4 MODEL;
 uniform mat4 lightSpaceMatrix;
 
 void main() {
-    fragPos = vec3(MODEL * vec4(position, 1.0));
+    fragPosition = vec3(MODEL * vec4(position, 1.0));
     fragNormal = transpose(inverse(mat3(MODEL))) * normal;
     fragPosLightSpace = lightSpaceMatrix * vec4(fragPosition, 1.0);
-    gl_Position = PROJECTION * VIEW * vec4(vs_out.fragPosition, 1.0);
+    gl_Position = PROJECTION * VIEW * vec4(fragPosition, 1.0);
 }

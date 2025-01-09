@@ -31,6 +31,7 @@ void traceObjet();
 
 // fonctions de rappel de glut
 void affichage();
+void affichageShadowMapShader();
 void clavier(unsigned char, int, int);
 void mouse(int, int, int, int);
 void mouseMotion(int, int);
@@ -48,6 +49,7 @@ float cameraDistance = 0.;
 // variables Handle d'opengl 
 //--------------------------
 GLuint programID; // handle pour le shader
+GLuint depthShaderProgramID;
 GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
@@ -73,6 +75,7 @@ glm::vec3 LightPosition(1., 0., .5);
 glm::vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
 GLfloat LightAttenuation = 1.;
 GLfloat LightAmbientCoefficient = .1;
+glm::mat4 LightSpaceMatrix;
 
 glm::mat4 MVP; // justement la voilà
 glm::mat4 Model, View, Projection; // Matrices constituant MVP
@@ -84,6 +87,16 @@ int screenWidth = 500;
 //-------------------
 GLuint bufSkybox;
 GLuint locSkybox;
+
+// pour la depth map
+//-------------------
+GLuint depthMapFBO;
+GLuint depthMap;
+
+GLuint shadow_width = 512;
+GLuint shadow_height = 512;
+
+GLuint locLightSpaceMatrix;
 
 Tore myTore;
 
@@ -134,6 +147,22 @@ void initSkybox(GLuint programID)
   glBindTexture(GL_TEXTURE_CUBE_MAP, bufSkybox);
 
   locSkybox = glGetUniformLocation(programID, "skybox");
+}
+
+void initDepthMap() {
+  glGenFramebuffers(1, &depthMapFBO);
+  glGenTextures(1, &depthMap);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D, depthMap, 0);
+  glDrawBuffer(GL_NONE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //----------------------------------------
@@ -192,8 +221,11 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag");
+  programID = LoadShaders("shaders/shadowMap/vertex_pass2.vert", "shaders/shadowMap/fragment_pass2.frag");
+  depthShaderProgramID = LoadShaders("shaders/shadowMap/vertex_pass1.vert", "shaders/shadowMap/fragment_pass1.frag");
   initOpenGL(programID);
+
+  initDepthMap();
 
   myTore.createTorus(1., .3);
 
@@ -203,7 +235,7 @@ int main(int argc, char ** argv)
   initSkybox(programID);
 
   /* enregistrement des fonctions de rappel */
-  glutDisplayFunc(affichage);
+  glutDisplayFunc(affichageShadowMapShader);
   glutKeyboardFunc(clavier);
   glutReshapeFunc(reshape);
   glutMouseFunc(mouse);
@@ -245,6 +277,57 @@ void affichage() {
   glutSwapBuffers();
 }
 
+void affichageShadowMapShader() {
+  glClearColor(1.0, 1.0, 1.0, 1.0);
+  glClearDepth(10.0f); // 0 is near, >0 is far
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glColor3f(1.0, 1.0, 1.0);
+  glPointSize(2.0);
+
+  //passe 1 : depuis la lumière
+  glViewport(0, 0, shadow_width, shadow_height);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(depthShaderProgramID);
+
+  glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, 1.f, 20.f);
+  glm::mat4 lightView = glm::lookAt(LightPosition, glm::vec3(0.f,0.f,0.f), glm::vec3(0.f,1.f,0.f));
+  LightSpaceMatrix = lightProjection * lightView;
+
+  traceObjet();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  //passe 2 : depuis la caméra
+  glViewport(0, 0, screenWidth, screenHeight);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(programID);
+
+  View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
+    glm::vec3(0, 0, 0), // and looks at the origin
+    glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+  );
+  Model = glm::mat4(1.0f);
+  Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
+  Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1, 0, 0));
+  Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
+  Model = glm::scale(Model, glm::vec3(.8, .8, .8));
+  MVP = Projection * View * Model;
+
+  LightSpaceMatrix = lightProjection * lightView;
+
+  GLint locShadow = glGetUniformLocation(programID, "shadowMap");
+
+  traceObjet();
+
+  glUseProgram(programID);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  glUniform1i(locShadow, 0);
+}
+
 //-------------------------------------
 //Trace le tore 2 via le VAO
 void traceObjet()
@@ -268,6 +351,7 @@ void traceObjet()
   glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
   glUniform1f(locLightAttenuation,LightAttenuation);
   glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
+  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
 
   //pour l'affichage
@@ -286,6 +370,8 @@ void reshape(int w, int h) {
   float aspectRatio = (float) w / h;
 
   Projection = glm::perspective(glm::radians(60.0f), (float)(w) / (float) h, 1.0f, 1000.0f);
+
+  screenWidth = w; screenHeight = h;
 }
 
 void clavier(unsigned char touche, int x, int y) {
