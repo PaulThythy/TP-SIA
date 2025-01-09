@@ -9,9 +9,11 @@ uniform vec3 cameraPosition;
 uniform sampler2D textureSampler;
 uniform mat4 MODEL;
 
-uniform float materialShininess;
-uniform vec3 materialSpecularColor;
-uniform vec3 materialAlbedo;
+uniform struct Material {
+    float shininess;
+    vec3 specularColor;
+    vec3 albedo;
+} material;
 
 uniform struct Light {
 	vec3 position;
@@ -42,7 +44,7 @@ void main() {
     // Calcul de la composante spéculaire
     vec3 R = reflect(-L, N);
     float specAngle = max(dot(R, V), 0.0);
-    vec3 specular = pow(specAngle, materialShininess) * materialSpecularColor * light.intensities;
+    vec3 specular = pow(specAngle, material.shininess) * material.specularColor * light.intensities;
 
     // Attenuation si souhaitée
     float dist = length(light.position - fragPosition);
@@ -54,6 +56,6 @@ void main() {
     vec4 texColor = texture(textureSampler, fragUV);
 
     // Couleur finale
-    finalColor = vec4(lightColor * materialAlbedo, 1.0) * texColor;
+    finalColor = vec4(lightColor * material.albedo, 1.0) * texColor;
 
 }

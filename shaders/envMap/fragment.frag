@@ -10,9 +10,11 @@ uniform sampler2D textureSampler;
 uniform samplerCube skybox;
 uniform mat4 MODEL;
 
-uniform float materialShininess;
-uniform vec3 materialSpecularColor;
-uniform vec3 materialAlbedo;
+uniform struct Material {
+    float shininess;
+    vec3 specularColor;
+    vec3 albedo;
+} material;
 
 uniform struct Light {
 	vec3 position;

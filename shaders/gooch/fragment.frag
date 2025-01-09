@@ -5,9 +5,11 @@ in vec3 fragNormal;
 
 uniform vec3 cameraPosition;
 
-uniform float materialShininess;
-uniform vec3 materialSpecularColor;
-uniform vec3 materialAlbedo;
+uniform struct Material {
+    float shininess;
+    vec3 specularColor;
+    vec3 albedo;
+} material;
 
 uniform struct Light {
 	vec3 position;
@@ -46,7 +48,7 @@ void main() {
     float attenuation = 1.0 / (1.0 + light.attenuation * dist * dist);
 
     // 4) Couleur finale
-    vec3 color = (ambient + goochTerm) * materialAlbedo * attenuation;
+    vec3 color = (ambient + goochTerm) * material.albedo * attenuation;
 
     finalColor = vec4(color, 1.0);
 

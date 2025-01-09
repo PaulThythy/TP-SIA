@@ -5,9 +5,11 @@ in vec3 fragNormal;
 
 uniform vec3 cameraPosition;
 
-uniform float materialShininess;
-uniform vec3 materialSpecularColor;
-uniform vec3 materialAlbedo;
+uniform struct Material {
+    float shininess;
+    vec3 specularColor;
+    vec3 albedo;
+} material;
 
 uniform struct Light {
     vec3 position;
@@ -52,6 +54,6 @@ void main() {
     if(outlineDotProduct <= 0.3) {
         finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
-        finalColor = vec4(lightColor * materialAlbedo, 1.0);
+        finalColor = vec4(lightColor * material.albedo, 1.0);
     }
 }

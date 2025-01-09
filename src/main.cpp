@@ -157,9 +157,9 @@ void initOpenGL(GLuint programID)
   /* on recupere l'ID */
   locCameraPosition = glGetUniformLocation(programID, "cameraPosition");
 
-  locmaterialShininess = glGetUniformLocation(programID, "materialShininess");
-  locmaterialSpecularColor = glGetUniformLocation(programID, "materialSpecularColor");
-  locmaterialAlbedo = glGetUniformLocation(programID, "materialAlbedo");
+  locmaterialShininess = glGetUniformLocation(programID, "material.shininess");
+  locmaterialSpecularColor = glGetUniformLocation(programID, "material.specularColor");
+  locmaterialAlbedo = glGetUniformLocation(programID, "material.albedo");
   locLightPosition = glGetUniformLocation(programID, "light.position");
   locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
@@ -173,7 +173,7 @@ int main(int argc, char ** argv)
 {
 
   /* initialisation de glut et creation de la fenetre */
-  glutInit( & argc, argv);
+  glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(200, 200);
   glutInitWindowSize(screenWidth, screenHeight);
@@ -192,7 +192,7 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/toonOutlines/vertex.vert", "shaders/toon/fragment.frag");
+  programID = LoadShaders("shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag");
   initOpenGL(programID);
 
   myTore.createTorus(1., .3);
@@ -260,7 +260,6 @@ void traceObjet()
   glUniformMatrix4fv(MatrixIDPerspective, 1, GL_FALSE, &Projection[0][0]);
 
   glUniform3f(locCameraPosition, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
 
   glUniform1f(locmaterialShininess,materialShininess);
   glUniform3f(locmaterialSpecularColor,materialSpecularColor.x,materialSpecularColor.y,materialSpecularColor.z);
