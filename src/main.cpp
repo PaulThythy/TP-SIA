@@ -48,7 +48,7 @@ float cameraDistance = 0.;
 // variables Handle d'opengl 
 //--------------------------
 GLuint programID; // handle pour le shader
-GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDPerspective; // handle pour la matrice MVP
+GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
 GLuint locmaterialSpecularColor;
@@ -148,7 +148,7 @@ void initOpenGL(GLuint programID)
   MatrixIDMVP = glGetUniformLocation(programID, "MVP");
   MatrixIDView = glGetUniformLocation(programID, "VIEW");
   MatrixIDModel = glGetUniformLocation(programID, "MODEL");
-  MatrixIDPerspective = glGetUniformLocation(programID, "PERSPECTIVE");
+  MatrixIDProjection = glGetUniformLocation(programID, "PROJECTION");
 
   // Projection matrix : 65 Field of View, 1:1 ratio, display range : 1 unit <-> 1000 units
   // ATTENTIOn l'angle est donné en radians si f GLM_FORCE_RADIANS est défini sinon en degré
@@ -257,7 +257,7 @@ void traceObjet()
   glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
   glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE,&View[0][0]);
   glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
-  glUniformMatrix4fv(MatrixIDPerspective, 1, GL_FALSE, &Projection[0][0]);
+  glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
 
   glUniform3f(locCameraPosition, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
@@ -271,10 +271,10 @@ void traceObjet()
 
 
   //pour l'affichage
-  glBindVertexArray(myTore.VAO); // on active le VAO
-  glDrawElements(GL_TRIANGLES, sizeof(myTore.indices), GL_UNSIGNED_INT, 0); // on appelle la fonction dessin 
-  glBindVertexArray(0); // on desactive les VAO
-  glUseProgram(0); // et le pg
+  glBindVertexArray(myTore.VAO);                                              // on active le VAO
+  glDrawElements(GL_TRIANGLES, sizeof(myTore.indices), GL_UNSIGNED_INT, 0);   // on appelle la fonction dessin 
+  glBindVertexArray(0);                                                       // on desactive les VAO
+  glUseProgram(0);                                                            // et le pg
 
 }
 
