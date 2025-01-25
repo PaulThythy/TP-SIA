@@ -71,7 +71,7 @@ glm::vec3 materialAlbedo(1, 1, 1);                 // couleur du materiau
 
 // la lumière
 //-----------
-glm::vec3 LightPosition(1., 0., .5);
+glm::vec3 LightPosition(2., 4., 2.);
 glm::vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
 GLfloat LightAttenuation = 1.;
 GLfloat LightAmbientCoefficient = .1;
@@ -95,8 +95,6 @@ GLuint depthMap;
 
 GLuint shadow_width = 512;
 GLuint shadow_height = 512;
-
-GLuint locLightSpaceMatrix;
 
 Tore myTore;
 
@@ -162,6 +160,7 @@ void initDepthMap() {
   glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D, depthMap, 0);
   glDrawBuffer(GL_NONE);
+  glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -193,7 +192,6 @@ void initOpenGL(GLuint programID)
   locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
   locLightAmbientCoefficient = glGetUniformLocation(programID, "light.ambientCoefficient");
-
 
 }
 //----------------------------------------
@@ -291,9 +289,12 @@ void affichageShadowMapShader() {
 
   glUseProgram(depthShaderProgramID);
 
-  glm::mat4 lightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, 1.f, 20.f);
+  glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 20.0f);
   glm::mat4 lightView = glm::lookAt(LightPosition, glm::vec3(0.f,0.f,0.f), glm::vec3(0.f,1.f,0.f));
   LightSpaceMatrix = lightProjection * lightView;
+
+  GLuint locLightSpaceMatrix = glGetUniformLocation(depthShaderProgramID, "lightSpaceMatrix");
+  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
   traceObjet();
 
@@ -318,14 +319,16 @@ void affichageShadowMapShader() {
 
   LightSpaceMatrix = lightProjection * lightView;
 
-  GLint locShadow = glGetUniformLocation(programID, "shadowMap");
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, depthMap);
+  GLint locShadowMap = glGetUniformLocation(programID, "shadowMap");
+  glUniform1i(locShadowMap, 0);
+
+  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
   traceObjet();
 
-  glUseProgram(programID);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-  glUniform1i(locShadow, 0);
+  glutSwapBuffers();
 }
 
 //-------------------------------------
@@ -351,7 +354,6 @@ void traceObjet()
   glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
   glUniform1f(locLightAttenuation,LightAttenuation);
   glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
-  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
 
   //pour l'affichage
