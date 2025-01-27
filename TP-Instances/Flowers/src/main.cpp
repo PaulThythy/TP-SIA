@@ -24,14 +24,9 @@
 #include "../glm/gtc/matrix_transform.hpp"
 
 #include "ppm.h"
-#include "tore.h"
-
-// initialisations
-void traceObjet();
 
 // fonctions de rappel de glut
 void affichage();
-void affichageShadowMapShader();
 void clavier(unsigned char, int, int);
 void mouse(int, int, int, int);
 void mouseMotion(int, int);
@@ -86,33 +81,6 @@ glm::mat4 Model, View, Projection; // Matrices constituant MVP
 int screenHeight = 500;
 int screenWidth = 500;
 
-// pour la depth map
-//-------------------
-GLuint depthMapFBO;
-GLuint depthMap;
-
-GLuint shadow_width = 512;
-GLuint shadow_height = 512;
-
-Tore myTore;
-
-void initDepthMap() {
-  glGenFramebuffers(1, &depthMapFBO);
-  glGenTextures(1, &depthMap);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_width, shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D, depthMap, 0);
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 //----------------------------------------
 void initTexture(void)
 //-----------------------------------------
@@ -130,7 +98,7 @@ void initTexture(void)
 	 glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth,iheight, 0, GL_RGB,GL_UNSIGNED_BYTE,image);
    
     locTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même  
- //   glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
+  //glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
 }
 
 //----------------------------------------
@@ -191,13 +159,6 @@ int main(int argc, char ** argv)
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
 
-  initDepthMap();
-
-  myTore.createTorus(1., .3);
-
-  // construction des VBO a partir des tableaux du cube deja construit
-  myTore.genereVBO();
-
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);
   glutKeyboardFunc(clavier);
@@ -209,7 +170,6 @@ int main(int argc, char ** argv)
   glutMainLoop();
 
   glDeleteProgram(programID);
-  myTore.deleteVBO();
   return 0;
 }
 
@@ -234,44 +194,12 @@ void affichage() {
   Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
   Model = glm::scale(Model, glm::vec3(.8, .8, .8));
   MVP = Projection * View * Model;
-  traceObjet(); // trace VBO avec ou sans shader
+
+  //TODO draw object (glUniform1.3.4f to bind uniforms to the shader, BindVertexArray, DrawElements)
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();
   glutSwapBuffers();
-}
-
-//-------------------------------------
-//Trace le tore 2 via le VAO
-void traceObjet()
-//-------------------------------------
-{
-  // Use  shader & MVP matrix   MVP = Projection * View * Model;
-  glUseProgram(programID);
-
-  //on envoie les données necessaires aux shaders */
-  glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
-  glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE,&View[0][0]);
-  glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
-  glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
-
-  glUniform3f(locCameraPosition, cameraPosition.x, cameraPosition.y, cameraPosition.z);
-
-  glUniform1f(locmaterialShininess,materialShininess);
-  glUniform3f(locmaterialSpecularColor,materialSpecularColor.x,materialSpecularColor.y,materialSpecularColor.z);
-  glUniform3f(locmaterialAlbedo, materialAlbedo.x, materialAlbedo.y, materialAlbedo.z);
-  glUniform3f(locLightPosition,LightPosition.x,LightPosition.y,LightPosition.z);
-  glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
-  glUniform1f(locLightAttenuation,LightAttenuation);
-  glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
-
-
-  //pour l'affichage
-  glBindVertexArray(myTore.VAO);                                              // on active le VAO
-  glDrawElements(GL_TRIANGLES, sizeof(myTore.indices), GL_UNSIGNED_INT, 0);   // on appelle la fonction dessin 
-  glBindVertexArray(0);                                                       // on desactive les VAO
-  glUseProgram(0);                                                            // et le pg
-
 }
 
 void reshape(int w, int h) {
