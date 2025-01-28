@@ -23,8 +23,6 @@
 #include "../glm/glm.hpp"
 #include "../glm/gtc/matrix_transform.hpp"
 
-#include "ppm.h"
-
 // fonctions de rappel de glut
 void affichage();
 void clavier(unsigned char, int, int);
@@ -44,7 +42,6 @@ float cameraDistance = 0.;
 // variables Handle d'opengl
 //--------------------------
 GLuint programID; // handle pour le shader
-GLuint depthShaderProgramID;
 GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
@@ -58,6 +55,55 @@ GLuint locLightAmbientCoefficient;
 GLuint image;
 GLuint bufTexture, bufNormalMap;
 GLuint locTexture, locNormalMap;
+
+GLuint grassVAO, grassVBO, grassEBO;
+GLuint grassAtlasTexture;
+GLint locTextureIndex;
+GLuint instanceVBO;
+const int NUM_INSTANCES = 100;
+std::vector<glm::mat4> instanceMatrix;
+
+struct InstanceData {
+  glm::vec3 position;
+  glm::vec3 rotation;
+  glm::vec3 scale;
+  int textureIndex;
+};
+std::vector<InstanceData> instances;
+
+void initGrass() {
+  float quadVertices[] = {
+    //positions         //uvs
+    -0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
+    0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+    0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
+    -0.5f, 0.0f, 0.0f, 0.0f, 1.0f
+  };
+
+  unsigned int indices[] = {
+    0, 1, 2,
+    2, 3, 0
+  };
+
+  glGenVertexArrays(1, &grassVAO);
+  glGenBuffers(1, &grassVBO);
+  glGenBuffers(1, &grassEBO);
+
+  glBindVertexArray(grassVAO);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, grassEBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+  // Position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(0);
+  // UV attribute
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+}
 
 // variable pour paramétrage eclairage
 //--------------------------------------
@@ -81,24 +127,27 @@ glm::mat4 Model, View, Projection; // Matrices constituant MVP
 int screenHeight = 500;
 int screenWidth = 500;
 
-//----------------------------------------
-void initTexture(void)
-//-----------------------------------------
-{
-  int iwidth, iheight;
-  GLubyte *image = NULL;
+void loadGrassTexture() {
+  glGenTextures(1, &grassAtlasTexture);
+  glBindTexture(GL_TEXTURE_2D, grassAtlasTexture);
 
-  image = glmReadPPM("../texture/Metalcolor.ppm", &iwidth, &iheight);
-  glGenTextures(1, &bufTexture);
-  glBindTexture(GL_TEXTURE_2D, bufTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth, iheight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 
-  locTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même
-  // glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV
+  int width, height, channels;
+  unsigned char* data = stbi_load("textures/s_grass_atlas.png", &width, &height, &channels, 0);
+
+  if(data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+  else {
+    std::cerr << "Failed to load texture" << std::endl;
+  }
+
+  stbi_image_free(data);
 }
 
 //----------------------------------------
@@ -160,6 +209,11 @@ int main(int argc, char **argv)
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
 
+  locTextureIndex = glGetUniformLocation(programID, "textureIndex");
+
+  initGrass();
+  loadGrassTexture();
+
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);
   glutKeyboardFunc(clavier);
@@ -197,7 +251,29 @@ void affichage()
   Model = glm::scale(Model, glm::vec3(.8, .8, .8));
   MVP = Projection * View * Model;
 
-  // TODO draw object (glUniform1.3.4f to bind uniforms to the shader, BindVertexArray, DrawElements)
+  glUseProgram(programID);
+
+  //update uniforms
+  glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
+  glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE, &View[0][0]);
+  glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
+  glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, grassAtlasTexture);
+  glUniform1i(glGetUniformLocation(programID, "textureSampler"), 0);
+  
+  //draw grass
+  glBindVertexArray(grassVAO);
+  for(int i = 0; i < 3; i++) {
+    glm::mat4 grassModel = Model;
+    grassModel = glm::rotate(grassModel, glm::radians(120.0f * i), glm::vec3(0.0f, 1.0f, 0.0f));
+    glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &grassModel[0][0]);
+
+    glUniform1i(locTextureIndex, rand() % 8);
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  }
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();
