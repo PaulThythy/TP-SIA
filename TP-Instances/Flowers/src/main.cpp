@@ -41,7 +41,7 @@ float cameraAngleX;
 float cameraAngleY;
 float cameraDistance = 0.;
 
-// variables Handle d'opengl 
+// variables Handle d'opengl
 //--------------------------
 GLuint programID; // handle pour le shader
 GLuint depthShaderProgramID;
@@ -51,22 +51,22 @@ GLuint locmaterialShininess;
 GLuint locmaterialSpecularColor;
 GLuint locmaterialAlbedo;
 GLuint locLightPosition;
-GLuint locLightIntensities; //a.k.a the color of the light
+GLuint locLightIntensities; // a.k.a the color of the light
 GLuint locLightAttenuation;
 GLuint locLightAmbientCoefficient;
 
-GLuint image ;
-GLuint bufTexture,bufNormalMap;
-GLuint locTexture,locNormalMap;
+GLuint image;
+GLuint bufTexture, bufNormalMap;
+GLuint locTexture, locNormalMap;
 
-//variable pour paramétrage eclairage
+// variable pour paramétrage eclairage
 //--------------------------------------
 glm::vec3 cameraPosition(0., 0., 3.);
 // le matériau
 //---------------
 GLfloat materialShininess = 3.;
-glm::vec3 materialSpecularColor(1., .1, 1); 
-glm::vec3 materialAlbedo(1, 1, 1);                 // couleur du materiau
+glm::vec3 materialSpecularColor(1., .1, 1);
+glm::vec3 materialAlbedo(1, 1, 1); // couleur du materiau
 
 // la lumière
 //-----------
@@ -75,7 +75,7 @@ glm::vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
 GLfloat LightAttenuation = 1.;
 GLfloat LightAmbientCoefficient = .1;
 
-glm::mat4 MVP; // justement la voilà
+glm::mat4 MVP;                     // justement la voilà
 glm::mat4 Model, View, Projection; // Matrices constituant MVP
 
 int screenHeight = 500;
@@ -85,27 +85,27 @@ int screenWidth = 500;
 void initTexture(void)
 //-----------------------------------------
 {
- int iwidth  , iheight;
-   GLubyte *  image = NULL;
- 
-    image = glmReadPPM("../texture/Metalcolor.ppm", &iwidth, &iheight);
-	 glGenTextures(1, &bufTexture);	
-	 glBindTexture(GL_TEXTURE_2D, bufTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	 glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth,iheight, 0, GL_RGB,GL_UNSIGNED_BYTE,image);
-   
-    locTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même  
-  //glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
+  int iwidth, iheight;
+  GLubyte *image = NULL;
+
+  image = glmReadPPM("../texture/Metalcolor.ppm", &iwidth, &iheight);
+  glGenTextures(1, &bufTexture);
+  glBindTexture(GL_TEXTURE_2D, bufTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth, iheight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+  locTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même
+  // glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV
 }
 
 //----------------------------------------
 void initOpenGL(GLuint programID)
 //----------------------------------------
 {
-  glCullFace(GL_BACK); // on spécifie queil faut éliminer les face arriere
+  glCullFace(GL_BACK);    // on spécifie queil faut éliminer les face arriere
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
 
@@ -126,13 +126,12 @@ void initOpenGL(GLuint programID)
   locmaterialSpecularColor = glGetUniformLocation(programID, "material.specularColor");
   locmaterialAlbedo = glGetUniformLocation(programID, "material.albedo");
   locLightPosition = glGetUniformLocation(programID, "light.position");
-  locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
+  locLightIntensities = glGetUniformLocation(programID, "light.intensities"); // a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
   locLightAmbientCoefficient = glGetUniformLocation(programID, "light.ambientCoefficient");
-
 }
 //----------------------------------------
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 //----------------------------------------
 {
 
@@ -144,17 +143,19 @@ int main(int argc, char ** argv)
   glutCreateWindow("EXERCICES INSTANCES");
 
   // Initialize GLEW
-  if (glewInit() != GLEW_OK) {
+  if (glewInit() != GLEW_OK)
+  {
     fprintf(stderr, "Failed to initialize GLEW\n");
     return -1;
   }
 
-  //info version GLSL
+  // info version GLSL
   std::cout << "***** Info GPU *****" << std::endl;
   std::cout << "Fabricant : " << glGetString(GL_VENDOR) << std::endl;
   std::cout << "Carte graphique: " << glGetString(GL_RENDERER) << std::endl;
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
-  std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
+  std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl
+            << std::endl;
 
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
@@ -174,7 +175,8 @@ int main(int argc, char ** argv)
 }
 
 /* fonction d'affichage */
-void affichage() {
+void affichage()
+{
 
   /* effacement de l'image avec la couleur de fond */
   /* Initialisation d'OpenGL */
@@ -184,9 +186,9 @@ void affichage() {
   glColor3f(1.0, 1.0, 1.0);
   glPointSize(2.0);
 
-  View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
-    glm::vec3(0, 0, 0), // and looks at the origin
-    glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+  View = glm::lookAt(cameraPosition,     // Camera is at (0,0,3), in World Space
+                     glm::vec3(0, 0, 0), // and looks at the origin
+                     glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
   );
   Model = glm::mat4(1.0f);
   Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
@@ -195,27 +197,31 @@ void affichage() {
   Model = glm::scale(Model, glm::vec3(.8, .8, .8));
   MVP = Projection * View * Model;
 
-  //TODO draw object (glUniform1.3.4f to bind uniforms to the shader, BindVertexArray, DrawElements)
+  // TODO draw object (glUniform1.3.4f to bind uniforms to the shader, BindVertexArray, DrawElements)
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();
   glutSwapBuffers();
 }
 
-void reshape(int w, int h) {
+void reshape(int w, int h)
+{
   // set viewport to be the entire window
-  glViewport(0, 0, (GLsizei) w, (GLsizei) h); // ATTENTION GLsizei important - indique qu'il faut convertir en entier non négatif
+  glViewport(0, 0, (GLsizei)w, (GLsizei)h); // ATTENTION GLsizei important - indique qu'il faut convertir en entier non négatif
 
   // set perspective viewing frustum
-  float aspectRatio = (float) w / h;
+  float aspectRatio = (float)w / h;
 
-  Projection = glm::perspective(glm::radians(60.0f), (float)(w) / (float) h, 1.0f, 1000.0f);
+  Projection = glm::perspective(glm::radians(60.0f), (float)(w) / (float)h, 1.0f, 1000.0f);
 
-  screenWidth = w; screenHeight = h;
+  screenWidth = w;
+  screenHeight = h;
 }
 
-void clavier(unsigned char touche, int x, int y) {
-  switch (touche) {
+void clavier(unsigned char touche, int x, int y)
+{
+  switch (touche)
+  {
   case 'f':
     /* affichage du carre plein */
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -290,36 +296,51 @@ void clavier(unsigned char touche, int x, int y) {
   }
 }
 
-void mouse(int button, int state, int x, int y) {
+void mouse(int button, int state, int x, int y)
+{
   mouseX = x;
   mouseY = y;
 
-  if (button == GLUT_LEFT_BUTTON) {
-    if (state == GLUT_DOWN) {
+  if (button == GLUT_LEFT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseLeftDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseLeftDown = false;
-  } else if (button == GLUT_RIGHT_BUTTON) {
-    if (state == GLUT_DOWN) {
+  }
+  else if (button == GLUT_RIGHT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseRightDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseRightDown = false;
-  } else if (button == GLUT_MIDDLE_BUTTON) {
-    if (state == GLUT_DOWN) {
+  }
+  else if (button == GLUT_MIDDLE_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseMiddleDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseMiddleDown = false;
   }
 }
 
-void mouseMotion(int x, int y) {
-  if (mouseLeftDown) {
+void mouseMotion(int x, int y)
+{
+  if (mouseLeftDown)
+  {
     cameraAngleY += (x - mouseX);
     cameraAngleX += (y - mouseY);
     mouseX = x;
     mouseY = y;
   }
-  if (mouseRightDown) {
+  if (mouseRightDown)
+  {
     cameraDistance += (y - mouseY) * 0.2f;
     mouseY = y;
   }
