@@ -10,12 +10,11 @@ uniform mat4 VIEW;
 uniform mat4 PROJECTION;
 
 out VS_OUT {
-    vec3 position;
     vec3 normal;
 } vs_out;
 
 void main(){
-    vs_out.position = vec3(MODEL * vec4(vertexPosition, 1.0));
-    vs_out.normal = normalize(inverse(transpose(mat3(MODEL))) * vertexNormal);
     gl_Position = MVP * vec4(vertexPosition, 1.0);
+    mat3 normalMatrix = mat3(transpose(inverse(VIEW * MODEL)));
+    vs_out.normal = normalize(vec3(vec4(normalMatrix * vertexNormal, 0.0)));
 }

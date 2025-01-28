@@ -4,7 +4,6 @@ layout(points) in;
 layout(line_strip, max_vertices = 2) out;
 
 in VS_OUT{
-    vec3 position;
     vec3 normal;
 } gs_in[];
 
@@ -27,6 +26,4 @@ void GenerateLine(int index) {
 
 void main() {
     GenerateLine(0);
-    GenerateLine(1);
-    GenerateLine(2);
 }
