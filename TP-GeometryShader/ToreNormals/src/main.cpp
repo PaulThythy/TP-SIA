@@ -15,15 +15,15 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <math.h>
-#include "shader.hpp"
 #include <string.h>
 #include <vector>
+
+#include "shader.hpp"
+#include "tore.h"
 
 // Include GLM
 #include "../glm/glm.hpp"
 #include "../glm/gtc/matrix_transform.hpp"
-
-#include "ppm.h"
 
 // fonctions de rappel de glut
 void affichage();
@@ -55,10 +55,6 @@ GLuint locLightIntensities; //a.k.a the color of the light
 GLuint locLightAttenuation;
 GLuint locLightAmbientCoefficient;
 
-GLuint image ;
-GLuint bufTexture,bufNormalMap;
-GLuint locTexture,locNormalMap;
-
 //variable pour paramétrage eclairage
 //--------------------------------------
 glm::vec3 cameraPosition(0., 0., 3.);
@@ -81,24 +77,35 @@ glm::mat4 Model, View, Projection; // Matrices constituant MVP
 int screenHeight = 500;
 int screenWidth = 500;
 
-//----------------------------------------
-void initTexture(void)
-//-----------------------------------------
+Tore myTore;
+
+void traceObjet()
+//-------------------------------------
 {
- int iwidth  , iheight;
-   GLubyte *  image = NULL;
- 
-    image = glmReadPPM("../texture/Metalcolor.ppm", &iwidth, &iheight);
-	 glGenTextures(1, &bufTexture);	
-	 glBindTexture(GL_TEXTURE_2D, bufTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	 glTexImage2D(GL_TEXTURE_2D, 0, 3, iwidth,iheight, 0, GL_RGB,GL_UNSIGNED_BYTE,image);
-   
-    locTexture = glGetUniformLocation(programID, "myTextureSampler"); // et il y a la texture elle même  
-  //glBindAttribLocation(programID,indexUVTexture,"vertexUV");	// il y a les coord UV  
+  // Use  shader & MVP matrix   MVP = Projection * View * Model;
+  glUseProgram(programID);
+
+  //on envoie les données necessaires aux shaders */
+  glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
+  glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE,&View[0][0]);
+  glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
+  glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
+
+  glUniform3f(locCameraPosition, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+
+  glUniform1f(locmaterialShininess,materialShininess);
+  glUniform3f(locmaterialSpecularColor,materialSpecularColor.x,materialSpecularColor.y,materialSpecularColor.z);
+  glUniform3f(locmaterialAlbedo, materialAlbedo.x, materialAlbedo.y, materialAlbedo.z);
+  glUniform3f(locLightPosition,LightPosition.x,LightPosition.y,LightPosition.z);
+  glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
+  glUniform1f(locLightAttenuation,LightAttenuation);
+  glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
+
+  //pour l'affichage
+  glBindVertexArray(myTore.VAO);                                            
+  glDrawElements(GL_POINTS, NB_R * NB_r * 6, GL_UNSIGNED_INT, 0);             
+  glBindVertexArray(0);                                                      
+  glUseProgram(0);                                                            
 }
 
 //----------------------------------------
@@ -129,7 +136,6 @@ void initOpenGL(GLuint programID)
   locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
   locLightAmbientCoefficient = glGetUniformLocation(programID, "light.ambientCoefficient");
-
 }
 //----------------------------------------
 int main(int argc, char ** argv)
@@ -141,7 +147,7 @@ int main(int argc, char ** argv)
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(200, 200);
   glutInitWindowSize(screenWidth, screenHeight);
-  glutCreateWindow("EXERCICES INSTANCES");
+  glutCreateWindow("EXERCICES GEOMETRY SHADER");
 
   // Initialize GLEW
   if (glewInit() != GLEW_OK) {
@@ -156,8 +162,11 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
+  programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag", "shaders/geometry.geom");
   initOpenGL(programID);
+
+  myTore.createTorus(1, 0.3);
+  myTore.genereVBO();
 
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);
@@ -170,6 +179,7 @@ int main(int argc, char ** argv)
   glutMainLoop();
 
   glDeleteProgram(programID);
+  myTore.deleteVBO();
   return 0;
 }
 
@@ -178,7 +188,7 @@ void affichage() {
 
   /* effacement de l'image avec la couleur de fond */
   /* Initialisation d'OpenGL */
-  glClearColor(1.0, 1.0, 1.0, 1.0);
+  glClearColor(0.0, 0.0, 0.0, 1.0);
   glClearDepth(10.0f); // 0 is near, >0 is far
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glColor3f(1.0, 1.0, 1.0);
@@ -195,7 +205,7 @@ void affichage() {
   Model = glm::scale(Model, glm::vec3(.8, .8, .8));
   MVP = Projection * View * Model;
 
-  //TODO draw object (glUniform1.3.4f to bind uniforms to the shader, BindVertexArray, DrawElements)
+  traceObjet();
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();

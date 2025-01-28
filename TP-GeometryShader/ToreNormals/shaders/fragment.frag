@@ -1,14 +1,7 @@
 #version 450
 
-uniform vec3 cameraPosition;
-
-uniform sampler2D myTextureSampler;
-uniform mat4 MODEL;
-
-in vec3 fragPosition;
-
-out vec4 finalColor;
+out vec4 FragColor;
 
 void main() {
-    finalColor = vec4(1.0, 0.0, 0.0, 1.0);
+    FragColor = vec4(1.0, 1.0, 0.0, 1.0); // Couleur jaune pour les normales
 }
