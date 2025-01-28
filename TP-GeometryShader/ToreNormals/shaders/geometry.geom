@@ -1,6 +1,6 @@
 #version 450
 
-layout(triangles) in;
+layout(points) in;
 layout(line_strip, max_vertices = 2) out;
 
 in VS_OUT{
@@ -13,7 +13,7 @@ uniform mat4 VIEW;
 uniform mat4 MODEL;
 uniform mat4 MVP;
 
-const float NORMAL_LENGTH = 0.1;
+const float NORMAL_LENGTH = 0.4;
 
 void GenerateLine(int index) {
     gl_Position = PROJECTION * gl_in[index].gl_Position;

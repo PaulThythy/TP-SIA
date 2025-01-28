@@ -16,6 +16,6 @@ out VS_OUT {
 
 void main(){
     vs_out.position = vec3(MODEL * vec4(vertexPosition, 1.0));
-    vs_out.normal = normalize(mat3(MODEL) * vertexNormal);
+    vs_out.normal = normalize(inverse(transpose(mat3(MODEL))) * vertexNormal);
     gl_Position = MVP * vec4(vertexPosition, 1.0);
 }
