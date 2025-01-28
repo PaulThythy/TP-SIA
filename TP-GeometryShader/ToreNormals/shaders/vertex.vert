@@ -10,11 +10,14 @@ uniform mat4 VIEW;
 uniform mat4 PROJECTION;
 
 out VS_OUT {
-    vec3 normal;
+    vec3 worldPos;
+    vec3 worldNormal;
 } vs_out;
 
 void main(){
-    gl_Position = MVP * vec4(vertexPosition, 1.0);
-    mat3 normalMatrix = mat3(transpose(inverse(VIEW * MODEL)));
-    vs_out.normal = normalize(vec3(vec4(normalMatrix * vertexNormal, 0.0)));
+    vec4 posWorld4 = MODEL * vec4(vertexPosition, 1.0);
+    vs_out.worldPos = posWorld4.xyz;
+    mat3 normalMatrix = mat3(transpose(inverse(MODEL)));
+    vs_out.worldNormal = normalize(normalMatrix * vertexNormal);
+    gl_Position = PROJECTION * VIEW * posWorld4;
 }
