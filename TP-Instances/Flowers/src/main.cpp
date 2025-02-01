@@ -44,7 +44,7 @@ float cameraDistance = 0.;
 
 // variables Handle d'opengl
 //--------------------------
-GLuint programID; // handle pour le shader
+GLuint programID;                                                    // handle pour le shader
 GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
@@ -81,94 +81,114 @@ glm::mat4 Model, View, Projection; // Matrices constituant MVP
 int screenHeight = 500;
 int screenWidth = 500;
 
-struct InstanceData {
+struct InstanceData
+{
   glm::vec3 position;
   float scale;
   float rotation;
+  int textureType; // 0: simple grass, 1: atlas
+  int hasFlower;   // 0: no flower, 1: with flower
 };
 
 GLuint vao, vbo, instanceVBO;
-GLuint textureID;
+GLuint grassTextureID, atlasTextureID;
 std::vector<InstanceData> instances;
 const int numInstances = 1000;
 
-GLuint loadTexture(const char* filepath) {
+GLuint loadTexture(const char *filepath)
+{
   GLuint texture;
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
 
   int width, height, nrChannels;
-  unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
-  if (data) {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-      glGenerateMipmap(GL_TEXTURE_2D);
-  } else {
-      std::cerr << "Failed to load texture: " << filepath << std::endl;
+  unsigned char *data = stbi_load(filepath, &width, &height, &nrChannels, 0);
+  if (data)
+  {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+  else
+  {
+    std::cerr << "Failed to load texture: " << filepath << std::endl;
   }
   stbi_image_free(data);
   return texture;
 }
 
-void generateInstances() {
+void generateInstances()
+{
   srand(static_cast<unsigned>(time(0)));
-  for (int i = 0; i < numInstances; ++i) {
-      InstanceData instance;
-      instance.position = glm::vec3(
-          (rand() % 200 - 100) / 10.0f, // Position X
-          0.0f,                        // Position Y
-          (rand() % 200 - 100) / 10.0f // Position Z
-      );
-      instance.scale = (rand() % 50 + 50) / 100.0f; // Scale entre 0.5 et 1.0
-      instance.rotation = (rand() % 360) * glm::radians(1.0f); // Rotation en radians
-      instances.push_back(instance);
+  for (int i = 0; i < numInstances; ++i)
+  {
+    InstanceData instance;
+    instance.position = glm::vec3(
+        (rand() % 200 - 100) / 10.0f, // Position X
+        0.0f,                         // Position Y
+        (rand() % 200 - 100) / 10.0f  // Position Z
+    );
+    instance.scale = (rand() % 50 + 50) / 100.0f;                      // Scale entre 0.5 et 1.0
+    instance.rotation = (rand() % 360) * glm::radians(1.0f);           // Rotation en radians
+    instance.textureType = rand() % 2;                                 // 0 ou 1 (herbe simple ou atlas)
+    instance.hasFlower = (instance.textureType == 1) ? rand() % 2 : 0; // Fleurs uniquement avec atlas
+    instances.push_back(instance);
   }
 }
 
-void initBuffers() {
-    // Données de géométrie pour un carré
-    float vertices[] = {
-        -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Bas gauche
-         0.5f, 0.0f, 0.0f, 1.0f, 1.0f, // Bas droite
-         0.5f, 1.0f, 0.0f, 1.0f, 0.0f, // Haut droite
-        -0.5f, 1.0f, 0.0f, 0.0f, 0.0f  // Haut gauche
-    };
+void initBuffers()
+{
+  // Données de géométrie pour un carré
+  float vertices[] = {
+      -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Bas gauche
+      0.5f, 0.0f, 0.0f, 1.0f, 1.0f,  // Bas droite
+      0.5f, 1.0f, 0.0f, 1.0f, 0.0f,  // Haut droite
+      -0.5f, 1.0f, 0.0f, 0.0f, 0.0f  // Haut gauche
+  };
 
-    unsigned int indices[] = {
-        0, 1, 2, // Premier triangle
-        2, 3, 0  // Deuxième triangle
-    };
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  // Positions
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
 
-    // Positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+  // Coordonnées UV
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
-    // Coordonnées UV
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+  // Instance data
+  glGenBuffers(1, &instanceVBO);
+  glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+  glBufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(InstanceData), instances.data(), GL_STATIC_DRAW);
 
-    // Instance data
-    glGenBuffers(1, &instanceVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(InstanceData), instances.data(), GL_STATIC_DRAW);
+  // Position de l'instance
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)0);
+  glEnableVertexAttribArray(2);
+  glVertexAttribDivisor(2, 1);
 
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)0);
-    glEnableVertexAttribArray(2);
-    glVertexAttribDivisor(2, 1);
+  // Échelle
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(3);
+  glVertexAttribDivisor(3, 1);
 
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribDivisor(3, 1);
+  // Rotation
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)(4 * sizeof(float)));
+  glEnableVertexAttribArray(4);
+  glVertexAttribDivisor(4, 1);
 
-    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(4 * sizeof(float)));
-    glEnableVertexAttribArray(4);
-    glVertexAttribDivisor(4, 1);
+  // Type de texture
+  glVertexAttribIPointer(5, 1, GL_INT, sizeof(InstanceData), (void *)(5 * sizeof(float)));
+  glEnableVertexAttribArray(5);
+  glVertexAttribDivisor(5, 1);
+
+  // Présence de fleurs
+  glVertexAttribIPointer(6, 1, GL_INT, sizeof(InstanceData), (void *)(5 * sizeof(float) + sizeof(int)));
+  glEnableVertexAttribArray(6);
+  glVertexAttribDivisor(6, 1);
 }
 
 //----------------------------------------
@@ -230,7 +250,8 @@ int main(int argc, char **argv)
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
 
-  textureID = loadTexture("textures/s_grass_atlas.png");
+  grassTextureID = loadTexture("textures/s_grass_atlas.png");
+  atlasTextureID = loadTexture("textures/s_grass_atlas.png");
   generateInstances();
   initBuffers();
 
@@ -276,7 +297,7 @@ void affichage()
   glBindVertexArray(vao);
   glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numInstances);
 
-  //update uniforms
+  // update uniforms
   glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
   glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE, &View[0][0]);
   glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
