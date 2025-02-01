@@ -23,6 +23,9 @@
 #include "../glm/glm.hpp"
 #include "../glm/gtc/matrix_transform.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 // fonctions de rappel de glut
 void affichage();
 void clavier(unsigned char, int, int);
@@ -56,55 +59,6 @@ GLuint image;
 GLuint bufTexture, bufNormalMap;
 GLuint locTexture, locNormalMap;
 
-GLuint grassVAO, grassVBO, grassEBO;
-GLuint grassAtlasTexture;
-GLint locTextureIndex;
-GLuint instanceVBO;
-const int NUM_INSTANCES = 100;
-std::vector<glm::mat4> instanceMatrix;
-
-struct InstanceData {
-  glm::vec3 position;
-  glm::vec3 rotation;
-  glm::vec3 scale;
-  int textureIndex;
-};
-std::vector<InstanceData> instances;
-
-void initGrass() {
-  float quadVertices[] = {
-    //positions         //uvs
-    -0.5f, 0.0f, 0.0f, 0.0f, 0.0f,
-    0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-    0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
-    -0.5f, 0.0f, 0.0f, 0.0f, 1.0f
-  };
-
-  unsigned int indices[] = {
-    0, 1, 2,
-    2, 3, 0
-  };
-
-  glGenVertexArrays(1, &grassVAO);
-  glGenBuffers(1, &grassVBO);
-  glGenBuffers(1, &grassEBO);
-
-  glBindVertexArray(grassVAO);
-  
-  glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, grassEBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-  // Position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-  // UV attribute
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-}
-
 // variable pour paramétrage eclairage
 //--------------------------------------
 glm::vec3 cameraPosition(0., 0., 3.);
@@ -127,27 +81,94 @@ glm::mat4 Model, View, Projection; // Matrices constituant MVP
 int screenHeight = 500;
 int screenWidth = 500;
 
-void loadGrassTexture() {
-  glGenTextures(1, &grassAtlasTexture);
-  glBindTexture(GL_TEXTURE_2D, grassAtlasTexture);
+struct InstanceData {
+  glm::vec3 position;
+  float scale;
+  float rotation;
+};
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+GLuint vao, vbo, instanceVBO;
+GLuint textureID;
+std::vector<InstanceData> instances;
+const int numInstances = 1000;
 
-  int width, height, channels;
-  unsigned char* data = stbi_load("textures/s_grass_atlas.png", &width, &height, &channels, 0);
+GLuint loadTexture(const char* filepath) {
+  GLuint texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
 
-  if(data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+  int width, height, nrChannels;
+  unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
+  if (data) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+      std::cerr << "Failed to load texture: " << filepath << std::endl;
   }
-  else {
-    std::cerr << "Failed to load texture" << std::endl;
-  }
-
   stbi_image_free(data);
+  return texture;
+}
+
+void generateInstances() {
+  srand(static_cast<unsigned>(time(0)));
+  for (int i = 0; i < numInstances; ++i) {
+      InstanceData instance;
+      instance.position = glm::vec3(
+          (rand() % 200 - 100) / 10.0f, // Position X
+          0.0f,                        // Position Y
+          (rand() % 200 - 100) / 10.0f // Position Z
+      );
+      instance.scale = (rand() % 50 + 50) / 100.0f; // Scale entre 0.5 et 1.0
+      instance.rotation = (rand() % 360) * glm::radians(1.0f); // Rotation en radians
+      instances.push_back(instance);
+  }
+}
+
+void initBuffers() {
+    // Données de géométrie pour un carré
+    float vertices[] = {
+        -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Bas gauche
+         0.5f, 0.0f, 0.0f, 1.0f, 1.0f, // Bas droite
+         0.5f, 1.0f, 0.0f, 1.0f, 0.0f, // Haut droite
+        -0.5f, 1.0f, 0.0f, 0.0f, 0.0f  // Haut gauche
+    };
+
+    unsigned int indices[] = {
+        0, 1, 2, // Premier triangle
+        2, 3, 0  // Deuxième triangle
+    };
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Positions
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // Coordonnées UV
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // Instance data
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(InstanceData), instances.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)(4 * sizeof(float)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
 }
 
 //----------------------------------------
@@ -209,10 +230,9 @@ int main(int argc, char **argv)
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
 
-  locTextureIndex = glGetUniformLocation(programID, "textureIndex");
-
-  initGrass();
-  loadGrassTexture();
+  textureID = loadTexture("textures/s_grass_atlas.png");
+  generateInstances();
+  initBuffers();
 
   /* enregistrement des fonctions de rappel */
   glutDisplayFunc(affichage);
@@ -253,27 +273,14 @@ void affichage()
 
   glUseProgram(programID);
 
+  glBindVertexArray(vao);
+  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numInstances);
+
   //update uniforms
   glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
   glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE, &View[0][0]);
   glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
   glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, grassAtlasTexture);
-  glUniform1i(glGetUniformLocation(programID, "textureSampler"), 0);
-  
-  //draw grass
-  glBindVertexArray(grassVAO);
-  for(int i = 0; i < 3; i++) {
-    glm::mat4 grassModel = Model;
-    grassModel = glm::rotate(grassModel, glm::radians(120.0f * i), glm::vec3(0.0f, 1.0f, 0.0f));
-    glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &grassModel[0][0]);
-
-    glUniform1i(locTextureIndex, rand() % 8);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  }
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();
