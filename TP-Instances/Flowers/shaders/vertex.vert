@@ -14,6 +14,7 @@ uniform mat4 MVP; // Matrice Model-View-Projection
 out vec2 UV;
 flat out int TextureType;
 flat out int HasFlower;
+flat out int instanceVariant;
 
 const float PI = 3.14159265359;
 
@@ -39,21 +40,10 @@ void main() {
     );
     model *= scale;
 
-    int faceIndex = gl_InstanceID % 3; 
-    float angle = faceIndex * (PI / 3.0);
-    float cosFace = cos(angle);
-    float sinFace = sin(angle);
-    mat4 faceRotation = mat4(
-        vec4(cosFace, 0.0, -sinFace, 0.0),
-        vec4(0.0, 1.0, 0.0, 0.0),
-        vec4(sinFace, 0.0, cosFace, 0.0),
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    model *= faceRotation;
-
     gl_Position = MVP * model * vec4(vertexPosition, 1.0);
 
     UV = vertexUV;
     TextureType = instanceTextureType;
     HasFlower = instanceHasFlower;
+    instanceVariant = gl_InstanceID % 4;
 }

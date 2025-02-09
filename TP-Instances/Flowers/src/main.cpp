@@ -18,6 +18,7 @@
 #include "shader.hpp"
 #include <string.h>
 #include <vector>
+#include <cstddef>
 
 // Include GLM
 #include "../glm/glm.hpp"
@@ -97,6 +98,8 @@ const int numInstances = 1000;
 
 GLuint loadTexture(const char *filepath)
 {
+  stbi_set_flip_vertically_on_load(true);
+
   GLuint texture;
   glGenTextures(1, &texture);
   glBindTexture(GL_TEXTURE_2D, texture);
@@ -137,56 +140,79 @@ void generateInstances()
 
 void initBuffers()
 {
-  // Données de géométrie pour un carré
-  float vertices[] = {
-      -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // Bas gauche
-      0.5f, 0.0f, 0.0f, 1.0f, 1.0f,  // Bas droite
-      0.5f, 1.0f, 0.0f, 1.0f, 0.0f,  // Haut droite
-      -0.5f, 1.0f, 0.0f, 0.0f, 0.0f  // Haut gauche
-  };
+  float halfX = 0.5f;
+  float halfY = 0.5f;
 
+  float c60 = cos(glm::radians(60.0f));
+  float s60 = sin(glm::radians(60.0f));
+
+  float c120 = cos(glm::radians(120.0f));
+  float s120 = sin(glm::radians(120.0f));
+
+  float vertices[] = {
+      // ----------------- Quad 1 : 0°  -----------------
+      -halfX, -halfY, 0.0f, 0.0f, 1.0f, // bas gauche
+      halfX, -halfY, 0.0f, 1.0f, 1.0f,  // bas droite
+      halfX, halfY, 0.0f, 1.0f, 0.0f,   // haut droite
+      -halfX, halfY, 0.0f, 0.0f, 0.0f,  // haut gauche
+
+      // ----------------- Quad 2 : +60°  --------------
+      // On applique la rotation (x, z) -> (x*c60 - z*s60, x*s60 + z*c60)
+      (-halfX * c60) - (0.0f * s60), -halfY, (-halfX * s60) + (0.0f * c60), 0.0f, 1.0f,
+      (halfX * c60) - (0.0f * s60), -halfY, (halfX * s60) + (0.0f * c60), 1.0f, 1.0f,
+      (halfX * c60) - (0.0f * s60), halfY, (halfX * s60) + (0.0f * c60), 1.0f, 0.0f,
+      (-halfX * c60) - (0.0f * s60), halfY, (-halfX * s60) + (0.0f * c60), 0.0f, 0.0f,
+
+      // ----------------- Quad 3 : +120° --------------
+      (-halfX * c120) - (0.0f * s120), -halfY, (-halfX * s120) + (0.0f * c120), 0.0f, 1.0f,
+      (halfX * c120) - (0.0f * s120), -halfY, (halfX * s120) + (0.0f * c120), 1.0f, 1.0f,
+      (halfX * c120) - (0.0f * s120), halfY, (halfX * s120) + (0.0f * c120), 1.0f, 0.0f,
+      (-halfX * c120) - (0.0f * s120), halfY, (-halfX * s120) + (0.0f * c120), 0.0f, 0.0f};
+
+  // Création et liaison du VAO
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 
+  // Création du VBO pour les sommets
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  // Positions
+  // Attribut 0 : positions (vec3)
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
 
-  // Coordonnées UV
+  // Attribut 1 : coordonnées UV (vec2)
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
-  // Instance data
+  // Création du buffer pour les données d'instance
   glGenBuffers(1, &instanceVBO);
   glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
   glBufferData(GL_ARRAY_BUFFER, instances.size() * sizeof(InstanceData), instances.data(), GL_STATIC_DRAW);
 
-  // Position de l'instance
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)0);
+  // Attribut 2 : position de l'instance (vec3)
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)offsetof(InstanceData, position));
   glEnableVertexAttribArray(2);
   glVertexAttribDivisor(2, 1);
 
-  // Échelle
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)(3 * sizeof(float)));
+  // Attribut 3 : échelle de l'instance (float)
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)offsetof(InstanceData, scale));
   glEnableVertexAttribArray(3);
   glVertexAttribDivisor(3, 1);
 
-  // Rotation
-  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)(4 * sizeof(float)));
+  // Attribut 4 : rotation de l'instance (float)
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void *)offsetof(InstanceData, rotation));
   glEnableVertexAttribArray(4);
   glVertexAttribDivisor(4, 1);
 
-  // Type de texture
-  glVertexAttribIPointer(5, 1, GL_INT, sizeof(InstanceData), (void *)(5 * sizeof(float)));
+  // Attribut 5 : type de texture (int)
+  glVertexAttribIPointer(5, 1, GL_INT, sizeof(InstanceData), (void *)offsetof(InstanceData, textureType));
   glEnableVertexAttribArray(5);
   glVertexAttribDivisor(5, 1);
 
-  // Présence de fleurs
-  glVertexAttribIPointer(6, 1, GL_INT, sizeof(InstanceData), (void *)(5 * sizeof(float) + sizeof(int)));
+  // Attribut 6 : présence de fleurs (int)
+  glVertexAttribIPointer(6, 1, GL_INT, sizeof(InstanceData), (void *)offsetof(InstanceData, hasFlower));
   glEnableVertexAttribArray(6);
   glVertexAttribDivisor(6, 1);
 }
@@ -195,8 +221,8 @@ void initBuffers()
 void initOpenGL(GLuint programID)
 //----------------------------------------
 {
-  glCullFace(GL_BACK);    // on spécifie queil faut éliminer les face arriere
-  glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
+  // glCullFace(GL_BACK);    // on spécifie queil faut éliminer les face arriere
+  // glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
 
   // Get  handles for our matrix transformations "MVP" VIEW  MODELuniform
@@ -250,7 +276,7 @@ int main(int argc, char **argv)
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
 
-  grassTextureID = loadTexture("textures/s_grass_atlas.png");
+  grassTextureID = loadTexture("textures/s_grass.png");
   atlasTextureID = loadTexture("textures/s_grass_atlas.png");
   generateInstances();
   initBuffers();
@@ -294,14 +320,22 @@ void affichage()
 
   glUseProgram(programID);
 
-  glBindVertexArray(vao);
-  glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numInstances);
-
   // update uniforms
   glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
   glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE, &View[0][0]);
   glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
   glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, grassTextureID);
+  glUniform1i(glGetUniformLocation(programID, "grassTexture"), 0);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, atlasTextureID);
+  glUniform1i(glGetUniformLocation(programID, "atlasTexture"), 1);
+
+  glBindVertexArray(vao);
+  glDrawArraysInstanced(GL_QUADS, 0, 12, numInstances);
 
   /* on force l'affichage du resultat */
   glutPostRedisplay();
