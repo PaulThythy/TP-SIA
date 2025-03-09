@@ -120,22 +120,27 @@ enum class ShaderID
     ENV_MAP
 };
 
+struct ShaderPassPaths {
+    std::string vs; // vertex shader path
+    std::string fs; // fragment shader path
+};
+
 struct ShaderDefinition {
     ShaderID m_id;
     bool m_multipass;
-    std::string m_pass1Paths;
-    std::string m_pass2Paths;
+    ShaderPassPaths m_pass1Paths;
+    ShaderPassPaths m_pass2Paths;
 
     GLuint programID1 = 0;
     GLuint programID2 = 0;
 
     ShaderDefinition(ShaderID _id,
-        const std::string _pass1Paths
+        const ShaderPassPaths _pass1Paths
     ) : m_id(_id), m_multipass(false), m_pass1Paths(_pass1Paths) {}
 
     ShaderDefinition(ShaderID _id,
-        const std::string _pass1Paths,
-        const std::string _pass2Paths
+        const ShaderPassPaths _pass1Paths,
+        const ShaderPassPaths _pass2Paths
     ) : m_id(_id), m_multipass(true), m_pass1Paths(_pass1Paths), m_pass2Paths(_pass2Paths) {}
 };
 
