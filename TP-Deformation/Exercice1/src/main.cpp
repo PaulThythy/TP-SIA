@@ -44,6 +44,8 @@ float cameraAngleX;
 float cameraAngleY;
 float cameraDistance = 0.;
 
+bool isToonShader = false;
+
 // variables Handle d'opengl 
 //--------------------------
 GLuint programID; // handle pour le shader
@@ -140,7 +142,7 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
+  programID = LoadShaders("shaders/vertex.vert", "shaders/fragment_phong.frag");
   initOpenGL(programID);
 
   myTore.createTorus(1., .3);
@@ -313,6 +315,20 @@ void clavier(unsigned char touche, int x, int y) {
     thetaMax -= 1.0;
     glutPostRedisplay();
     break;
+
+  case 'r':
+      isToonShader = !isToonShader;
+
+      glDeleteProgram(programID);
+
+      if (isToonShader) {
+          programID = LoadShaders("shaders/vertex.vert", "shaders/fragment_toon.frag");
+      } else {
+          programID = LoadShaders("shaders/vertex.vert", "shaders/fragment_phong.frag");
+      }
+      initOpenGL(programID);
+      glutPostRedisplay();
+      break;
 
   case 'q':
     /*la touche 'q' permet de quitter le programme */

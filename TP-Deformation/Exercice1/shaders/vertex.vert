@@ -8,7 +8,7 @@ uniform float thetaMax;
 float coordMin = -3;
 float coordMax = 3;
 
-float EPSILON = 1e-8;
+float EPSILON = 1e-4;
 
 layout(location = 0) in vec3 position; 
 layout(location = 2) in vec3 normal;
@@ -44,19 +44,6 @@ vec3 twistPos(in vec3 p) {
     return twistM * p;
 }
 
-//TODO, do the other method
-/*float rDeriv(float vertexCoord) {
-    if(vertexCoord < coordMin) {
-        return 0;
-    }
-    else if(vertexCoord <= coordMax && vertexCoord >= coordMin) {
-        return thetaMax/(coordMax-coordMin);
-    }
-    else {
-        return 0;
-    }
-}*/
-
 vec3 finiteDifferences(in vec3 p, in vec3 e, float eps) {
     return (twistPos(p + e) - twistPos(p)) / eps;
 }
@@ -67,18 +54,12 @@ void main() {
     gl_Position  = MVP * posWorld;
     fragPosition = posWorld.xyz;
 
-    vec3 dx = finiteDifferences(position, vec3(EPSILON, 0.0, 0.0), EPSILON);
-    vec3 dy = finiteDifferences(position, vec3(0.0, EPSILON, 0.0), EPSILON);
-    vec3 dz = finiteDifferences(position, vec3(0.0, 0.0, EPSILON), EPSILON);
+    vec3 dFdx = finiteDifferences(position, vec3(EPSILON, 0.0, 0.0), EPSILON);
+    vec3 dFdy = finiteDifferences(position, vec3(0.0, EPSILON, 0.0), EPSILON);
+    vec3 dFdz = finiteDifferences(position, vec3(0.0, 0.0, EPSILON), EPSILON);
 
-    mat3 J;
-    // dF/dx            // dF/y
-    J[0][0] = dx.x;     J[1] = dy;
-    J[0][1] = dx.y;
-    J[0][2] = dx.z;
-
-    
-    J[2] = dz;  // dF/dz
+    // Construction de la matrice jacobienne J (colonnes : dF/dx, dF/dy, dF/dz)
+    mat3 J = mat3(dFdx, dFdy, dFdz);
 
     // Transformation de la normale via la jacobienne locale
     vec3 twistedNormalLocal = inverse(transpose(J)) * normal;
