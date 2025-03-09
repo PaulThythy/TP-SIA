@@ -130,72 +130,85 @@ struct ShaderDefinition {
     bool m_multipass;
     ShaderPassPaths m_pass1Paths;
     ShaderPassPaths m_pass2Paths;
+    std::string m_shaderName;
 
     GLuint programID1 = 0;
     GLuint programID2 = 0;
 
     ShaderDefinition(ShaderID _id,
-        const ShaderPassPaths _pass1Paths
-    ) : m_id(_id), m_multipass(false), m_pass1Paths(_pass1Paths) {}
+        const ShaderPassPaths _pass1Paths,
+        const std::string _shaderName
+    ) : m_id(_id), m_multipass(false), m_pass1Paths(_pass1Paths), m_shaderName(_shaderName) {}
 
     ShaderDefinition(ShaderID _id,
         const ShaderPassPaths _pass1Paths,
-        const ShaderPassPaths _pass2Paths
-    ) : m_id(_id), m_multipass(true), m_pass1Paths(_pass1Paths), m_pass2Paths(_pass2Paths) {}
+        const ShaderPassPaths _pass2Paths,
+        const std::string _shaderName
+    ) : m_id(_id), m_multipass(true), m_pass1Paths(_pass1Paths), m_pass2Paths(_pass2Paths), m_shaderName(_shaderName) {}
 };
 
 static std::vector<ShaderDefinition> g_allShaders = {
     ShaderDefinition(
         ShaderID::PHONG,
-        { "shaders/phong/vertex.vert", "shaders/phong/fragment.frag" }
+        { "shaders/phong/vertex.vert", "shaders/phong/fragment.frag" },
+        "Phong shader"
     ),
 
     ShaderDefinition(
         ShaderID::PHONG_TEX,
-        { "shaders/phongWithTexture/vertex.vert", "shaders/phongWithTexture/fragment.frag" }
+        { "shaders/phongWithTexture/vertex.vert", "shaders/phongWithTexture/fragment.frag" },
+        "Phong shader with a texture"
     ),
 
     ShaderDefinition(
         ShaderID::TOON,
-        { "shaders/toon/vertex.vert", "shaders/toon/fragment.frag" }
+        { "shaders/toon/vertex.vert", "shaders/toon/fragment.frag" },
+        "Toon shader"
     ),
 
     ShaderDefinition(
         ShaderID::TOON_OUTLINES,
-        { "shaders/toonOutlines/vertex.vert", "shaders/toonOutlines/fragment.frag" }
+        { "shaders/toonOutlines/vertex.vert", "shaders/toonOutlines/fragment.frag" },
+        "Toon shader with outlines (single pass)"
     ),
 
     ShaderDefinition(
         ShaderID::TOON_OUTLINES_MULTIPASS,
         { "shaders/toonOutlinesMultipass/vertex_pass1.vert", "shaders/toonOutlinesMultipass/fragment_pass1.frag" },
-        { "shaders/toonOutlinesMultipass/vertex_pass2.vert", "shaders/toonOutlinesMultipass/fragment_pass2.frag" }
+        { "shaders/toonOutlinesMultipass/vertex_pass2.vert", "shaders/toonOutlinesMultipass/fragment_pass2.frag" },
+        "Toon shader with outlines (multipass)"
     ),
 
     ShaderDefinition(
         ShaderID::TOON_OUTLINES_SOBEL,
-        { "shaders/toonOutlinesSobel/vertex.vert", "shaders/toonOutlinesSobel/fragment.frag" }
+        { "shaders/toonOutlinesSobel/vertex.vert", "shaders/toonOutlinesSobel/fragment.frag" },
+        "Toon shader (single pass) using a sobel filter"
     ),
 
     ShaderDefinition(
         ShaderID::SHADOW_MAP,
         { "shaders/shadowMap/vertex_pass1.vert", "shaders/shadowMap/fragment_pass1.frag" },
-        {"shaders/shadowMap/vertex_pass2.vert", "shaders/shadowMap/fragment_pass2.frag"}
+        {"shaders/shadowMap/vertex_pass2.vert", "shaders/shadowMap/fragment_pass2.frag"},
+        "Shadow Map shader (multipass)"
     ),
 
     ShaderDefinition(
         ShaderID::GOOCH,
-        { "shaders/gooch/vertex.vert", "shaders/gooch/fragment.frag" }
+        { "shaders/gooch/vertex.vert", "shaders/gooch/fragment.frag" },
+        "Gooch shader (single pass)"
     ),
 
     ShaderDefinition(
         ShaderID::GOOCH_OUTLINES_MULTIPASS,
         { "shaders/goochOutlinesMultipass/vertex_pass1.vert", "shaders/goochOutlinesMultipass/fragment_pass1.frag" },
-        { "shaders/goochOutlinesMultipass/vertex_pass2.vert", "shaders/goochOutlinesMultipass/fragment_pass2.frag" }
+        { "shaders/goochOutlinesMultipass/vertex_pass2.vert", "shaders/goochOutlinesMultipass/fragment_pass2.frag" },
+        "Gooch shader (multipass)"
     ),
 
     ShaderDefinition(
         ShaderID::ENV_MAP,
-        { "shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag" }
+        { "shaders/envMap/vertex.vert", "shaders/envMap/fragment.frag" }, 
+        "Environment map (single pass)"
     )
 };
 

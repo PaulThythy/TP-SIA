@@ -27,10 +27,11 @@
 #include "tore.h"
 
 // initialisations
-void traceObjet();
+void traceObjet(GLuint);
+void loadShader(int);
 
 // fonctions de rappel de glut
-void affichage();
+void display();
 void affichageShadowMapShader();
 void clavier(unsigned char, int, int);
 void mouse(int, int, int, int);
@@ -48,8 +49,6 @@ float cameraDistance = 0.;
 
 // variables Handle d'opengl 
 //--------------------------
-GLuint programID; // handle pour le shader
-GLuint depthShaderProgramID;
 GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
@@ -59,6 +58,8 @@ GLuint locLightPosition;
 GLuint locLightIntensities; //a.k.a the color of the light
 GLuint locLightAttenuation;
 GLuint locLightAmbientCoefficient;
+
+int g_currentShaderIndex = 0;
 
 //variable pour paramétrage eclairage
 //--------------------------------------
@@ -73,7 +74,7 @@ glm::vec3 materialAlbedo(1, 0, 0);                 // couleur du materiau
 //-----------
 glm::vec3 LightPosition(2., 4., 2.);
 glm::vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
-GLfloat LightAttenuation = 1.;
+GLfloat LightAttenuation = 0.05;
 GLfloat LightAmbientCoefficient = .1;
 glm::mat4 LightSpaceMatrix;
 
@@ -219,9 +220,11 @@ int main(int argc, char ** argv)
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
   std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
 
-  programID = LoadShaders("shaders/shadowMap/vertex_pass2.vert", "shaders/shadowMap/fragment_pass2.frag");
-  depthShaderProgramID = LoadShaders("shaders/shadowMap/vertex_pass1.vert", "shaders/shadowMap/fragment_pass1.frag");
-  initOpenGL(programID);
+  g_currentShaderIndex = 0;
+  loadShader(g_currentShaderIndex);
+
+  auto &sd = g_allShaders[g_currentShaderIndex];
+  initOpenGL(sd.programID1);
 
   initDepthMap();
 
@@ -229,11 +232,11 @@ int main(int argc, char ** argv)
 
   // construction des VBO a partir des tableaux du cube deja construit
   myTore.genereVBO();
-  myTore.initTexture(programID, "texture/opengl.ppm");
-  initSkybox(programID);
+  myTore.initTexture(sd.programID1, "texture/opengl.ppm");
+  initSkybox(sd.programID1);
 
   /* enregistrement des fonctions de rappel */
-  glutDisplayFunc(affichageShadowMapShader);
+  glutDisplayFunc(display);
   glutKeyboardFunc(clavier);
   glutReshapeFunc(reshape);
   glutMouseFunc(mouse);
@@ -242,14 +245,13 @@ int main(int argc, char ** argv)
   /* Entree dans la boucle principale glut */
   glutMainLoop();
 
-  glDeleteProgram(programID);
+  glDeleteProgram(sd.programID1);
   myTore.deleteVBO();
   return 0;
 }
 
-/* fonction d'affichage */
-void affichage() {
 
+void display() {
   /* effacement de l'image avec la couleur de fond */
   /* Initialisation d'OpenGL */
   glClearColor(1.0, 1.0, 1.0, 1.0);
@@ -258,82 +260,84 @@ void affichage() {
   glColor3f(1.0, 1.0, 1.0);
   glPointSize(2.0);
 
-  View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
-    glm::vec3(0, 0, 0), // and looks at the origin
-    glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
-  );
-  Model = glm::mat4(1.0f);
-  Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
-  Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1, 0, 0));
-  Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
-  Model = glm::scale(Model, glm::vec3(.8, .8, .8));
-  MVP = Projection * View * Model;
-  traceObjet(); // trace VBO avec ou sans shader
+  auto &sd = g_allShaders[g_currentShaderIndex];
 
-  /* on force l'affichage du resultat */
-  glutPostRedisplay();
-  glutSwapBuffers();
-}
+  if (!sd.m_multipass) {
+    glUseProgram(sd.programID1);
 
-void affichageShadowMapShader() {
-  glClearColor(1.0, 1.0, 1.0, 1.0);
-  glClearDepth(10.0f); // 0 is near, >0 is far
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glColor3f(1.0, 1.0, 1.0);
-  glPointSize(2.0);
+    View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
+      glm::vec3(0, 0, 0), // and looks at the origin
+      glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+    );
+    Model = glm::mat4(1.0f);
+    Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
+    Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1, 0, 0));
+    Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
+    Model = glm::scale(Model, glm::vec3(.8, .8, .8));
+    MVP = Projection * View * Model;
+    traceObjet(sd.programID1); // trace VBO avec ou sans shader
 
-  //passe 1 : depuis la lumière
-  glViewport(0, 0, shadow_width, shadow_height);
-  glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-  glClear(GL_DEPTH_BUFFER_BIT);
+    /* on force l'affichage du resultat */
+    glutPostRedisplay();
+    glutSwapBuffers();
 
-  glUseProgram(depthShaderProgramID);
+  } else {
+    
+    if(sd.m_id == ShaderID::SHADOW_MAP) {
+      //passe 1 : depuis la lumière
+      glViewport(0, 0, shadow_width, shadow_height);
+      glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+      glClear(GL_DEPTH_BUFFER_BIT);
 
-  glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 20.0f);
-  glm::mat4 lightView = glm::lookAt(LightPosition, glm::vec3(0.f,0.f,0.f), glm::vec3(0.f,1.f,0.f));
-  LightSpaceMatrix = lightProjection * lightView;
+      glUseProgram(sd.programID1);
 
-  GLuint locLightSpaceMatrix = glGetUniformLocation(depthShaderProgramID, "lightSpaceMatrix");
-  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
+      glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 20.0f);
+      glm::mat4 lightView = glm::lookAt(LightPosition, glm::vec3(0.f,0.f,0.f), glm::vec3(0.f,1.f,0.f));
+      LightSpaceMatrix = lightProjection * lightView;
 
-  traceObjet();
+      GLuint locLightSpaceMatrix = glGetUniformLocation(sd.programID1, "lightSpaceMatrix");
+      glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      traceObjet(sd.programID1);
 
-  //passe 2 : depuis la caméra
-  glViewport(0, 0, screenWidth, screenHeight);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  glUseProgram(programID);
+      //passe 2 : depuis la caméra
+      glViewport(0, 0, screenWidth, screenHeight);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
-    glm::vec3(0, 0, 0), // and looks at the origin
-    glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
-  );
-  Model = glm::mat4(1.0f);
-  Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
-  Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1, 0, 0));
-  Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
-  Model = glm::scale(Model, glm::vec3(.8, .8, .8));
-  MVP = Projection * View * Model;
+      glUseProgram(sd.programID2);
 
-  LightSpaceMatrix = lightProjection * lightView;
+      View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
+        glm::vec3(0, 0, 0), // and looks at the origin
+        glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+      );
+      Model = glm::mat4(1.0f);
+      Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
+      Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1, 0, 0));
+      Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0, 1, 0));
+      Model = glm::scale(Model, glm::vec3(.8, .8, .8));
+      MVP = Projection * View * Model;
 
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, depthMap);
-  GLint locShadowMap = glGetUniformLocation(programID, "shadowMap");
-  glUniform1i(locShadowMap, 0);
+      LightSpaceMatrix = lightProjection * lightView;
 
-  glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, depthMap);
+      GLint locShadowMap = glGetUniformLocation(sd.programID2, "shadowMap");
+      glUniform1i(locShadowMap, 0);
 
-  traceObjet();
+      glUniformMatrix4fv(locLightSpaceMatrix, 1, GL_FALSE, &LightSpaceMatrix[0][0]);
 
-  glutSwapBuffers();
+      traceObjet(sd.programID2);
+
+      glutSwapBuffers();
+    }
+  }
 }
 
 //-------------------------------------
 //Trace le tore 2 via le VAO
-void traceObjet()
+void traceObjet(GLuint programID)
 //-------------------------------------
 {
   // Use  shader & MVP matrix   MVP = Projection * View * Model;
@@ -445,17 +449,13 @@ void clavier(unsigned char touche, int x, int y) {
     break;
   case 'r':
     /* reload le shader */
-    /*programID = LoadShaders("shaders/toon/vertex.vert", "shaders/toon/fragment.frag");
-    glUseProgram(programID); 
-    initOpenGL(programID);
-    glutPostRedisplay();*/
-    break;
-  case 'R':
-    /* reload le shader */
-    /*programID = LoadShaders("shaders/phong/vertex.vert", "shaders/phong/fragment.frag");
-    glUseProgram(programID); 
-    initOpenGL(programID);
-    glutPostRedisplay();*/
+    g_currentShaderIndex++;
+    if (g_currentShaderIndex >= (int)g_allShaders.size()) {
+        g_currentShaderIndex = 0; // on revient au premier
+    }
+    loadShader(g_currentShaderIndex);
+    glutPostRedisplay();
+
     break;
 
   case 'q':
@@ -499,4 +499,28 @@ void mouseMotion(int x, int y) {
   }
 
   glutPostRedisplay();
+}
+
+void loadShader(int i)
+{
+    auto &sd = g_allShaders[i];
+
+    if (glIsProgram(sd.programID1))
+        glDeleteProgram(sd.programID1);
+    if (glIsProgram(sd.programID2))
+        glDeleteProgram(sd.programID2);
+
+    // Compile la passe 1
+    sd.programID1 = LoadShaders(sd.m_pass1Paths.vs.c_str(), sd.m_pass1Paths.fs.c_str());
+
+    // Si multipasse, compile la passe 2
+    if (sd.m_multipass) {
+        sd.programID2 = LoadShaders(sd.m_pass2Paths.vs.c_str(), sd.m_pass2Paths.fs.c_str());
+        initOpenGL(sd.programID2);
+    } else {
+        sd.programID2 = 0;
+        initOpenGL(sd.programID1);
+    }
+
+    std::cout << "Shader chargé : " << sd.m_shaderName << std::endl;
 }
