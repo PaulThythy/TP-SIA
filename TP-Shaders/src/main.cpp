@@ -67,7 +67,7 @@ glm::vec3 cameraPosition(0., 0., 3.);
 //---------------
 GLfloat materialShininess = 3.;
 glm::vec3 materialSpecularColor(1., .1, 1); 
-glm::vec3 materialAlbedo(1, 1, 1);                 // couleur du materiau
+glm::vec3 materialAlbedo(1, 0, 0);                 // couleur du materiau
 
 // la lumière
 //-----------
