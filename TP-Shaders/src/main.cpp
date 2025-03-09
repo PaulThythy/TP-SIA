@@ -331,6 +331,34 @@ void display() {
       traceObjet(sd.programID2);
 
       glutSwapBuffers();
+    
+    } else if(sd.m_id == ShaderID::TOON_OUTLINES_MULTIPASS) {
+      //--------------------------------
+      // PASSE 1 : Outline noir gonflé
+      //--------------------------------
+      glViewport(0, 0, screenWidth, screenHeight);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      glCullFace(GL_FRONT);
+
+      View  = glm::lookAt(cameraPosition, glm::vec3(0), glm::vec3(0,1,0));
+      Model = glm::mat4(1.0f);
+      Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
+      Model = glm::rotate(Model, glm::radians(cameraAngleX), glm::vec3(1,0,0));
+      Model = glm::rotate(Model, glm::radians(cameraAngleY), glm::vec3(0,1,0));
+      Model = glm::scale(Model, glm::vec3(0.8f));
+      MVP   = Projection * View * Model;
+
+      traceObjet(sd.programID1);
+
+      //--------------------------------
+      // PASSE 2 : Toon normal
+      //--------------------------------
+      glCullFace(GL_BACK); // On revient au cull "classique"
+
+      traceObjet(sd.programID2);
+
+      glutSwapBuffers();
     }
   }
 }

@@ -1,0 +1,18 @@
+#version 450
+
+uniform mat4 MVP;
+uniform mat4 PROJECTION;
+uniform mat4 VIEW;
+uniform mat4 MODEL;
+
+float outlineThickness = 0.2;
+
+layout (location = 0) in vec3 position;
+layout (location = 2) in vec3 normal;
+
+void main() {
+    vec3 displaced = position + normal * outlineThickness;
+
+    vec4 posWorld  = MODEL * vec4(displaced, 1.0);
+    gl_Position = MVP * posWorld;
+}
