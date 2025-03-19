@@ -115,7 +115,7 @@ enum class ShaderID
     TOON_OUTLINES_MULTIPASS,
     SHADOW_MAP,
     GOOCH,
-    GOOCH_OUTLINES_MULTIPASS,
+    GOOCH_OUTLINES,
     ENV_MAP
 };
 
@@ -192,10 +192,9 @@ static std::vector<ShaderDefinition> g_allShaders = {
     ),
 
     ShaderDefinition(
-        ShaderID::GOOCH_OUTLINES_MULTIPASS,
-        { "shaders/goochOutlinesMultipass/vertex_pass1.vert", "shaders/goochOutlinesMultipass/fragment_pass1.frag" },
-        { "shaders/goochOutlinesMultipass/vertex_pass2.vert", "shaders/goochOutlinesMultipass/fragment_pass2.frag" },
-        "Gooch shader (multipass)"
+        ShaderID::GOOCH_OUTLINES,
+        { "shaders/goochOutlines/vertex.vert", "shaders/goochOutlines/fragment.frag" },
+        "Gooch shader with outlines (single pass)"
     ),
 
     ShaderDefinition(

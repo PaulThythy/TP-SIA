@@ -37,5 +37,12 @@ void main() {
 
     vec3 goochColor = mix(cool, warm, NdL);
 
-    finalColor = vec4(goochColor * light.intensities * material.albedo, 1.0);
+    vec3 V = normalize(cameraPosition - fragPosition);
+    float outlineDotProduct = dot(V, fragNormal);
+
+    if(outlineDotProduct <= 0.3) {
+        finalColor = vec4(0.0, 0.0, 0.0, 1.0);
+    } else {
+        finalColor = vec4(goochColor * light.intensities, 1.0);
+    }
 }

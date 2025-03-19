@@ -5,7 +5,7 @@ uniform mat4 PROJECTION;
 uniform mat4 VIEW;
 uniform mat4 MODEL;
 
-float outlineThickness = 0.01;
+float outlineThickness = 0.001;
 
 layout (location = 0) in vec3 position;
 layout (location = 2) in vec3 normal;

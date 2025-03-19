@@ -37,5 +37,5 @@ void main() {
 
     vec3 goochColor = mix(cool, warm, NdL);
 
-    finalColor = vec4(goochColor * light.intensities * material.albedo, 1.0);
+    finalColor = vec4(goochColor * light.intensities, 1.0);
 }

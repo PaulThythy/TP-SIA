@@ -332,7 +332,7 @@ void display() {
 
       glutSwapBuffers();
     
-    } else if(sd.m_id == ShaderID::TOON_OUTLINES_MULTIPASS || sd.m_id == ShaderID::GOOCH_OUTLINES_MULTIPASS) {
+    } else if(sd.m_id == ShaderID::TOON_OUTLINES_MULTIPASS) {
       //--------------------------------
       // PASSE 1 : Outline noir gonflé
       //--------------------------------
