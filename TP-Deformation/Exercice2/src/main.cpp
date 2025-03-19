@@ -42,32 +42,32 @@ float cameraAngleX;
 float cameraAngleY;
 float cameraDistance = 0.;
 
-// variables Handle d'opengl 
+// variables Handle d'opengl
 //--------------------------
-GLuint programID; // handle pour le shader
+GLuint programID;                                                    // handle pour le shader
 GLuint MatrixIDMVP, MatrixIDView, MatrixIDModel, MatrixIDProjection; // handle pour la matrice MVP
 GLuint locCameraPosition;
 GLuint locmaterialShininess;
 GLuint locmaterialSpecularColor;
 GLuint locmaterialAlbedo;
 GLuint locLightPosition;
-GLuint locLightIntensities; //a.k.a the color of the light
+GLuint locLightIntensities; // a.k.a the color of the light
 GLuint locLightAttenuation;
 GLuint locLightAmbientCoefficient;
 
-GLuint vbo_bezier_surf_position, vbo_bezier_surf_colors, vao_surf_bezier;
-GLuint vbo_bezier_indices;
 GLuint vbo_circle_position, vbo_circle_colors, vao_circle;
 int circleResolution = 100;
 
-//variable pour paramétrage eclairage
+GLuint vbo_bezier_surf_position, vbo_bezier_surf_colors, vao_surf_bezier;
+
+// variable pour paramétrage eclairage
 //--------------------------------------
 glm::vec3 cameraPosition(0., 0., 3.);
 // le matériau
 //---------------
 GLfloat materialShininess = 3.;
-glm::vec3 materialSpecularColor(1., .1, 1); 
-glm::vec3 materialAlbedo(1, 0, 0);                 // couleur du materiau
+glm::vec3 materialSpecularColor(1., .1, 1);
+glm::vec3 materialAlbedo(1, 0, 0); // couleur du materiau
 
 // la lumière
 //-----------
@@ -76,112 +76,140 @@ glm::vec3 LightIntensities(1., 1., 1.); // couleur la lumiere
 GLfloat LightAttenuation = .001;
 GLfloat LightAmbientCoefficient = .1;
 
-glm::mat4 MVP; // justement la voilà
+glm::mat4 MVP;                     // justement la voilà
 glm::mat4 Model, View, Projection; // Matrices constituant MVP
 
 int screenHeight = 500;
 int screenWidth = 500;
 
-void initBuffers() {
-  //surface de Bézier
-  GLfloat bezierSurfaceControlPoints[] = {
-    //p00           //p10           //p20
-    0.0f,0.0f,0.0f, 0.5f,0.0f,0.0f, 1.0f,0.0f,0.0f,
-    //p01           //p11           //p21
-    0.0f,0.0f,0.5f, 0.5f,0.0f,0.5f, 1.0f,0.0f,0.5f,
-    //p02           //p12           //p22
-    0.0f,0.0f,1.0f, 0.5f,0.0f,1.0f, 1.0f,0.0f,1.0f
-  };
+void initBuffers()
+{
+  //cercle unitaire
+  std::vector<GLfloat> circlePositions;
+  std::vector<GLfloat> circleColors;
+  circlePositions.reserve(circleResolution * 3);
+  circleColors.reserve(circleResolution * 3);
 
-  GLfloat bezierSurfaceColorPoints[] = {
-    //p00           //p10           //p20
-    1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f,
-    //p01           //p11           //p21
-    1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f,
-    //p02           //p12           //p22
-    1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f, 1.0f,0.0f,0.0f
-  };
+  float angleStep = 2.0f * float(M_PI) / circleResolution;
+  for (int i = 0; i < circleResolution; ++i)
+  {
+    float angle = i * angleStep;
+    float x = std::cos(angle);
+    float y = std::sin(angle);
 
-  // Création du VBO pour indices verticals
-  GLuint bezierVerticalIndices[] = {
-    0, 3, 6,    // première colonne
-    1, 4, 7,    // deuxième colonne
-    2, 5, 8     // troisième colonne
-  };
+    circlePositions.push_back(x);
+    circlePositions.push_back(y);
+    circlePositions.push_back(0.f);
 
-  glGenBuffers(1, &vbo_bezier_indices);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_bezier_indices);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(bezierVerticalIndices), bezierVerticalIndices, GL_STATIC_DRAW);
-
-  if (glIsBuffer(vbo_bezier_surf_position) == GL_TRUE)
-      glDeleteBuffers(1, &vbo_bezier_surf_position);
-  glGenBuffers(1, &vbo_bezier_surf_position);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_position);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(bezierSurfaceControlPoints), bezierSurfaceControlPoints, GL_STATIC_DRAW);
-
-  if (glIsBuffer(vbo_bezier_surf_colors) == GL_TRUE)
-      glDeleteBuffers(1, &vbo_bezier_surf_colors);
-  glGenBuffers(1, &vbo_bezier_surf_colors);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_colors);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(bezierSurfaceColorPoints), bezierSurfaceColorPoints, GL_STATIC_DRAW);
-
-  glGenVertexArrays(1, &vao_surf_bezier);
-  glBindVertexArray(vao_surf_bezier);
-
-  glEnableVertexAttribArray(0);   //position, location = 0
-  glEnableVertexAttribArray(1);   //color, location = 1
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_position);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_colors);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void *)0); 
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-
-  //cercle
-  float step = 2*M_PI/circleResolution;
-  float radius = 1.0f; 
-  glm::vec3 origin(0.5f,0.0f,0.5f);
-  GLfloat circlePoints[circleResolution * 3];
-  GLfloat circleColorPoints[circleResolution * 3];
-
-  for(int i = 0; i < circleResolution; i++) {
-    circlePoints[i] = radius * cos(i * step) + origin.x;
-    circlePoints[i*1] = 0.0f;
-    circlePoints[i*2] = radius * sin(i * step) + origin.z;
-
-    circleColorPoints[i] = 0.0f;
-    circleColorPoints[i*1] = 1.0f;
-    circleColorPoints[i*2] = 0.0f;
+    circleColors.push_back(1.f);
+    circleColors.push_back(0.f);
+    circleColors.push_back(0.f);
   }
-
-  if (glIsBuffer(vbo_circle_position) == GL_TRUE)
-      glDeleteBuffers(1, &vbo_circle_position);
-  glGenBuffers(1, &vbo_circle_position);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_position);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(circlePoints), circlePoints, GL_STATIC_DRAW);
-
-  if (glIsBuffer(vbo_circle_colors) == GL_TRUE)
-      glDeleteBuffers(1, &vbo_circle_colors);
-  glGenBuffers(1, &vbo_circle_colors);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_colors);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(circleColorPoints), circleColorPoints, GL_STATIC_DRAW);
 
   glGenVertexArrays(1, &vao_circle);
   glBindVertexArray(vao_circle);
 
-  glEnableVertexAttribArray(0);   //position, location = 0
-  glEnableVertexAttribArray(1);   //color, location = 1
-
+  //positions
+  glGenBuffers(1, &vbo_circle_position);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_position);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0); 
+  glBufferData(
+    GL_ARRAY_BUFFER,
+    circlePositions.size() * sizeof(GLfloat),
+    circlePositions.data(),
+    GL_STATIC_DRAW
+  );
 
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(
+    0,            // index du layout (location = 0)
+    3,            // nombre de composantes par vertex (x,y,z)
+    GL_FLOAT,     // type
+    GL_FALSE,     // normalisation
+    0,            // stride (0 = données packées)
+    (void*)0      // offset
+  );
+
+  //couleurs
+  glGenBuffers(1, &vbo_circle_colors);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_colors);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
+  glBufferData(
+    GL_ARRAY_BUFFER,
+    circleColors.size() * sizeof(GLfloat),
+    circleColors.data(),
+    GL_STATIC_DRAW
+  );
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(
+    1,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void*)0
+  );
+
+  glBindVertexArray(0);
+
+  //carré
+  std::vector<GLfloat> squarePositions = {
+    -1.f, -1.f,  0.f,   
+     1.f, -1.f,  0.f,   
+     1.f,  1.f,  0.f,  
+    -1.f,  1.f,  0.f 
+  };
+
+  // Couleurs pour chacun des 4 sommets (ex: bleu)
+  std::vector<GLfloat> squareColors = {
+      0.f, 0.f, 1.f,
+      0.f, 0.f, 1.f,
+      0.f, 0.f, 1.f,
+      0.f, 0.f, 1.f
+  };
+
+  glGenVertexArrays(1, &vao_surf_bezier); 
+  glBindVertexArray(vao_surf_bezier);
+
+  //positions
+  glGenBuffers(1, &vbo_bezier_surf_position); // ou vbo_square_position
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_position);
+  glBufferData(
+    GL_ARRAY_BUFFER,
+    squarePositions.size() * sizeof(GLfloat),
+    squarePositions.data(),
+    GL_STATIC_DRAW
+  );
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(
+    0,         
+    3,         
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void*)0
+  );
+
+  //couleurs
+  glGenBuffers(1, &vbo_bezier_surf_colors);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_colors);
+  glBufferData(
+    GL_ARRAY_BUFFER,
+    squareColors.size() * sizeof(GLfloat),
+    squareColors.data(),
+    GL_STATIC_DRAW
+  );
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(
+    1,
+    3,
+    GL_FLOAT,
+    GL_FALSE,
+    0,
+    (void*)0
+  );
+
   glBindVertexArray(0);
 }
 
@@ -189,7 +217,7 @@ void initBuffers() {
 void initOpenGL(GLuint programID)
 //----------------------------------------
 {
-  glCullFace(GL_BACK); // on spécifie queil faut éliminer les face arriere
+  glCullFace(GL_BACK);    // on spécifie queil faut éliminer les face arriere
   glEnable(GL_CULL_FACE); // on active l'élimination des faces qui par défaut n'est pas active
   glEnable(GL_DEPTH_TEST);
 
@@ -210,12 +238,12 @@ void initOpenGL(GLuint programID)
   locmaterialSpecularColor = glGetUniformLocation(programID, "material.specularColor");
   locmaterialAlbedo = glGetUniformLocation(programID, "material.albedo");
   locLightPosition = glGetUniformLocation(programID, "light.position");
-  locLightIntensities = glGetUniformLocation(programID, "light.intensities");//a.k.a the color of the light
+  locLightIntensities = glGetUniformLocation(programID, "light.intensities"); // a.k.a the color of the light
   locLightAttenuation = glGetUniformLocation(programID, "light.attenuation");
   locLightAmbientCoefficient = glGetUniformLocation(programID, "light.ambientCoefficient");
 }
 //----------------------------------------
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 //----------------------------------------
 {
 
@@ -227,17 +255,19 @@ int main(int argc, char ** argv)
   glutCreateWindow("EXERCICES DEFORMATION");
 
   // Initialize GLEW
-  if (glewInit() != GLEW_OK) {
+  if (glewInit() != GLEW_OK)
+  {
     fprintf(stderr, "Failed to initialize GLEW\n");
     return -1;
   }
 
-  //info version GLSL
+  // info version GLSL
   std::cout << "***** Info GPU *****" << std::endl;
   std::cout << "Fabricant : " << glGetString(GL_VENDOR) << std::endl;
   std::cout << "Carte graphique: " << glGetString(GL_RENDERER) << std::endl;
   std::cout << "Version : " << glGetString(GL_VERSION) << std::endl;
-  std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl << std::endl;
+  std::cout << "Version GLSL : " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl
+            << std::endl;
 
   programID = LoadShaders("shaders/vertex.vert", "shaders/fragment.frag");
   initOpenGL(programID);
@@ -259,7 +289,8 @@ int main(int argc, char ** argv)
 }
 
 /* fonction d'affichage */
-void affichage() {
+void affichage()
+{
 
   /* effacement de l'image avec la couleur de fond */
   /* Initialisation d'OpenGL */
@@ -269,9 +300,9 @@ void affichage() {
   glColor3f(1.0, 1.0, 1.0);
   glPointSize(2.0);
 
-  View = glm::lookAt(cameraPosition, // Camera is at (0,0,3), in World Space
-    glm::vec3(0, 0, 0), // and looks at the origin
-    glm::vec3(0, 1, 0) // Head is up (set to 0,-1,0 to look upside-down)
+  View = glm::lookAt(cameraPosition,     // Camera is at (0,0,3), in World Space
+                     glm::vec3(0, 0, 0), // and looks at the origin
+                     glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
   );
   Model = glm::mat4(1.0f);
   Model = glm::translate(Model, glm::vec3(0, 0, cameraDistance));
@@ -288,66 +319,58 @@ void affichage() {
 }
 
 //-------------------------------------
-//Trace le tore 2 via le VAO
+// Trace le tore 2 via le VAO
 void traceObjet()
 //-------------------------------------
 {
   // Use  shader & MVP matrix   MVP = Projection * View * Model;
   glUseProgram(programID);
 
-  //on envoie les données necessaires aux shaders */
+  // on envoie les données necessaires aux shaders */
   glUniformMatrix4fv(MatrixIDMVP, 1, GL_FALSE, &MVP[0][0]);
-  glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE,&View[0][0]);
+  glUniformMatrix4fv(MatrixIDView, 1, GL_FALSE, &View[0][0]);
   glUniformMatrix4fv(MatrixIDModel, 1, GL_FALSE, &Model[0][0]);
   glUniformMatrix4fv(MatrixIDProjection, 1, GL_FALSE, &Projection[0][0]);
 
   glUniform3f(locCameraPosition, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
-  glUniform1f(locmaterialShininess,materialShininess);
-  glUniform3f(locmaterialSpecularColor,materialSpecularColor.x,materialSpecularColor.y,materialSpecularColor.z);
+  glUniform1f(locmaterialShininess, materialShininess);
+  glUniform3f(locmaterialSpecularColor, materialSpecularColor.x, materialSpecularColor.y, materialSpecularColor.z);
   glUniform3f(locmaterialAlbedo, materialAlbedo.x, materialAlbedo.y, materialAlbedo.z);
-  glUniform3f(locLightPosition,LightPosition.x,LightPosition.y,LightPosition.z);
-  glUniform3f(locLightIntensities,LightIntensities.x,LightIntensities.y,LightIntensities.z);
-  glUniform1f(locLightAttenuation,LightAttenuation);
-  glUniform1f(locLightAmbientCoefficient,LightAmbientCoefficient);
+  glUniform3f(locLightPosition, LightPosition.x, LightPosition.y, LightPosition.z);
+  glUniform3f(locLightIntensities, LightIntensities.x, LightIntensities.y, LightIntensities.z);
+  glUniform1f(locLightAttenuation, LightAttenuation);
+  glUniform1f(locLightAmbientCoefficient, LightAmbientCoefficient);
 
-  // Dessin des lignes horizontales
-  glBindVertexArray(vao_surf_bezier);
-  for (int i = 0; i < 3; i++) {
-      glDrawArrays(GL_LINE_STRIP, i * 3, 3);
-  }
-
-  // Dessin des lignes verticales
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_bezier_indices);
-  // Première colonne
-  glDrawElements(GL_LINE_STRIP, 3, GL_UNSIGNED_INT, (void*)(0 * sizeof(GLuint)));
-  // Deuxième colonne
-  glDrawElements(GL_LINE_STRIP, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint)));
-  // Troisième colonne
-  glDrawElements(GL_LINE_STRIP, 3, GL_UNSIGNED_INT, (void*)(6 * sizeof(GLuint)));
-
+  //cercle
   glBindVertexArray(vao_circle);
   glDrawArrays(GL_LINE_LOOP, 0, circleResolution);
- 
-  glBindVertexArray(0);                                                      
-  glUseProgram(0);                                                            
+  glBindVertexArray(0);
 
+  //carré
+  glBindVertexArray(vao_surf_bezier);
+  glDrawArrays(GL_LINE_LOOP, 0, 4);
+  glBindVertexArray(0);
 }
 
-void reshape(int w, int h) {
+void reshape(int w, int h)
+{
   // set viewport to be the entire window
-  glViewport(0, 0, (GLsizei) w, (GLsizei) h); // ATTENTION GLsizei important - indique qu'il faut convertir en entier non négatif
+  glViewport(0, 0, (GLsizei)w, (GLsizei)h); // ATTENTION GLsizei important - indique qu'il faut convertir en entier non négatif
 
   // set perspective viewing frustum
-  float aspectRatio = (float) w / h;
+  float aspectRatio = (float)w / h;
 
-  Projection = glm::perspective(glm::radians(60.0f), (float)(w) / (float) h, 1.0f, 1000.0f);
+  Projection = glm::perspective(glm::radians(60.0f), (float)(w) / (float)h, 1.0f, 1000.0f);
 
-  screenWidth = w; screenHeight = h;
+  screenWidth = w;
+  screenHeight = h;
 }
 
-void clavier(unsigned char touche, int x, int y) {
-  switch (touche) {
+void clavier(unsigned char touche, int x, int y)
+{
+  switch (touche)
+  {
   case 'f':
     /* affichage du carre plein */
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -420,36 +443,51 @@ void clavier(unsigned char touche, int x, int y) {
   }
 }
 
-void mouse(int button, int state, int x, int y) {
+void mouse(int button, int state, int x, int y)
+{
   mouseX = x;
   mouseY = y;
 
-  if (button == GLUT_LEFT_BUTTON) {
-    if (state == GLUT_DOWN) {
+  if (button == GLUT_LEFT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseLeftDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseLeftDown = false;
-  } else if (button == GLUT_RIGHT_BUTTON) {
-    if (state == GLUT_DOWN) {
+  }
+  else if (button == GLUT_RIGHT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseRightDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseRightDown = false;
-  } else if (button == GLUT_MIDDLE_BUTTON) {
-    if (state == GLUT_DOWN) {
+  }
+  else if (button == GLUT_MIDDLE_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
       mouseMiddleDown = true;
-    } else if (state == GLUT_UP)
+    }
+    else if (state == GLUT_UP)
       mouseMiddleDown = false;
   }
 }
 
-void mouseMotion(int x, int y) {
-  if (mouseLeftDown) {
+void mouseMotion(int x, int y)
+{
+  if (mouseLeftDown)
+  {
     cameraAngleY += (x - mouseX);
     cameraAngleX += (y - mouseY);
     mouseX = x;
     mouseY = y;
   }
-  if (mouseRightDown) {
+  if (mouseRightDown)
+  {
     cameraDistance += (y - mouseY) * 0.2f;
     mouseY = y;
   }
