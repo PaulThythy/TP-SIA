@@ -20,36 +20,22 @@ uniform struct Light {
 
 out vec4 finalColor;
 
-vec3 coolColor = vec3(0.0, 0.0, 1.0);
-vec3 warmColor = vec3(1.0, 0.6, 0.0);
+vec3 coolColor = vec3(1.0, 0.6, 0.2);
+vec3 warmColor = vec3(0.0, 0.3, 0.7);
+float alpha = 0.7;    // Influence de la teinte chaude
+float beta = 0.3;     // Influence de la teinte froide
 
 void main() {
-    // Normale normalisée
     vec3 N = normalize(fragNormal);
-    // Vecteur direction lumière
     vec3 L = normalize(light.position - fragPosition);
+    
+    float NdL = dot(N, L) * 0.5 + 0.5; // Normalisation entre 0 et 1
 
-    // Terme “Lambert” = N·L (borné à [0,1])
-    float ndotL = max(dot(N, L), 0.0);
+    // Détermination des couleurs Gooch
+    vec3 warm = mix(coolColor, warmColor, alpha);
+    vec3 cool = mix(coolColor, warmColor, beta);
 
-    // 1) Calcul de la “base Gooch”
-    // Gooch mélange entre coolColor et warmColor selon ndotL
-    // alpha = (1 + ndotL) / 2 est dans [0,1]
-    float alpha = 0.5 * (1.0 + ndotL);
-    vec3 goochTerm = mix(coolColor, warmColor, alpha);
-    // On multiplie par l’intensité de la lumière pour garder la cohérence
-    goochTerm *= light.intensities;
+    vec3 goochColor = mix(cool, warm, NdL);
 
-    // 2) Terme ambiant (classique)
-    vec3 ambient = light.ambientCoefficient * light.intensities;
-
-    // 3) Atténuation (optionnel)
-    float dist = length(light.position - fragPosition);
-    float attenuation = 1.0 / (1.0 + light.attenuation * dist * dist);
-
-    // 4) Couleur finale
-    vec3 color = (ambient + goochTerm) * material.albedo * attenuation;
-
-    finalColor = vec4(color, 1.0);
-
+    finalColor = vec4(goochColor * light.intensities * material.albedo, 1.0);
 }
