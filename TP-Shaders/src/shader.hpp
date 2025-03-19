@@ -113,7 +113,6 @@ enum class ShaderID
     TOON,
     TOON_OUTLINES,
     TOON_OUTLINES_MULTIPASS,
-    TOON_OUTLINES_SOBEL,
     SHADOW_MAP,
     GOOCH,
     GOOCH_OUTLINES_MULTIPASS,
@@ -177,12 +176,6 @@ static std::vector<ShaderDefinition> g_allShaders = {
         { "shaders/toonOutlinesMultipass/vertex_pass1.vert", "shaders/toonOutlinesMultipass/fragment_pass1.frag" },
         { "shaders/toonOutlinesMultipass/vertex_pass2.vert", "shaders/toonOutlinesMultipass/fragment_pass2.frag" },
         "Toon shader with outlines (multipass)"
-    ),
-
-    ShaderDefinition(
-        ShaderID::TOON_OUTLINES_SOBEL,
-        { "shaders/toonOutlinesSobel/vertex.vert", "shaders/toonOutlinesSobel/fragment.frag" },
-        "Toon shader (single pass) using a sobel filter"
     ),
 
     ShaderDefinition(
