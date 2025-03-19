@@ -44,8 +44,6 @@ float cameraAngleX;
 float cameraAngleY;
 float cameraDistance = 0.;
 
-bool isToonShader = false;
-
 // variables Handle d'opengl 
 //--------------------------
 GLuint programID; // handle pour le shader
@@ -306,29 +304,13 @@ void clavier(unsigned char touche, int x, int y) {
     glutPostRedisplay();
     break;
   case 't':
-    std::cout << thetaMax << std::endl;
     thetaMax += 1.0;
     glutPostRedisplay();
     break;
   case 'T':
-    std::cout << thetaMax << std::endl;
     thetaMax -= 1.0;
     glutPostRedisplay();
     break;
-
-  case 'r':
-      isToonShader = !isToonShader;
-
-      glDeleteProgram(programID);
-
-      if (isToonShader) {
-          programID = LoadShaders("shaders/vertex.vert", "shaders/fragment_toon.frag");
-      } else {
-          programID = LoadShaders("shaders/vertex.vert", "shaders/fragment_phong.frag");
-      }
-      initOpenGL(programID);
-      glutPostRedisplay();
-      break;
 
   case 'q':
     /*la touche 'q' permet de quitter le programme */
