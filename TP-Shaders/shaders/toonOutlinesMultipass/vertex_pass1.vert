@@ -5,14 +5,16 @@ uniform mat4 PROJECTION;
 uniform mat4 VIEW;
 uniform mat4 MODEL;
 
-float outlineThickness = 0.2;
+float outlineThickness = 0.01;
 
 layout (location = 0) in vec3 position;
 layout (location = 2) in vec3 normal;
 
 void main() {
-    vec3 displaced = position + normal * outlineThickness;
+    mat3 normalMatrix = transpose(inverse(mat3(MODEL)));
+    vec3 N = normalize(normalMatrix * normal);
 
-    vec4 posWorld  = MODEL * vec4(displaced, 1.0);
-    gl_Position = MVP * posWorld;
+    vec3 inflatedPosition = position + N * outlineThickness;
+
+    gl_Position = MVP * vec4(inflatedPosition, 1.0);
 }
