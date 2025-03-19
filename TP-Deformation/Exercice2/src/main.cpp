@@ -57,8 +57,16 @@ GLuint locLightAmbientCoefficient;
 
 GLuint vbo_circle_position, vbo_circle_colors, vao_circle;
 int circleResolution = 100;
+int selectedPointIndex = 0;
 
 GLuint vbo_bezier_surf_position, vbo_bezier_surf_colors, vao_surf_bezier;
+
+std::vector<GLfloat> squarePositions = {
+  -1.f, -1.f,  0.f,   
+   1.f, -1.f,  0.f,   
+   1.f,  1.f,  0.f,  
+  -1.f,  1.f,  0.f 
+};
 
 // variable pour paramétrage eclairage
 //--------------------------------------
@@ -152,12 +160,6 @@ void initBuffers()
   glBindVertexArray(0);
 
   //carré
-  std::vector<GLfloat> squarePositions = {
-    -1.f, -1.f,  0.f,   
-     1.f, -1.f,  0.f,   
-     1.f,  1.f,  0.f,  
-    -1.f,  1.f,  0.f 
-  };
 
   // Couleurs pour chacun des 4 sommets (ex: bleu)
   std::vector<GLfloat> squareColors = {
@@ -211,6 +213,63 @@ void initBuffers()
   );
 
   glBindVertexArray(0);
+}
+
+void updateSquareVBO() {
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_bezier_surf_position);
+
+  glBufferSubData(
+    GL_ARRAY_BUFFER,
+    0,
+    squarePositions.size() * sizeof(GLfloat),
+    squarePositions.data() 
+  );
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void recalcCircle()
+{
+    glm::vec3 c00 = glm::vec3(squarePositions[0], squarePositions[1], squarePositions[2]);
+    glm::vec3 c10 = glm::vec3(squarePositions[3], squarePositions[4], squarePositions[5]);
+    glm::vec3 c11 = glm::vec3(squarePositions[6], squarePositions[7], squarePositions[8]);
+    glm::vec3 c01 = glm::vec3(squarePositions[9], squarePositions[10], squarePositions[11]);
+
+    std::vector<GLfloat> newCirclePositions;
+    newCirclePositions.reserve(circleResolution * 3);
+
+    float angleStep = 2.0f * float(M_PI) / circleResolution;
+    for (int i = 0; i < circleResolution; ++i)
+    {
+        float angle = i * angleStep;
+        // Coordonnées "initiales" dans [-1,1]^2
+        float x = std::cos(angle);
+        float y = std::sin(angle);
+
+        // Conversion en [0,1]^2
+        float u = (x + 1.f) * 0.5f;
+        float v = (y + 1.f) * 0.5f;
+
+        // Interpolation bilinéaire
+        glm::vec3 pos =
+            c00 * (1.f - u) * (1.f - v)
+          + c10 * (      u) * (1.f - v)
+          + c11 * (      u) * (      v)
+          + c01 * (1.f - u) * (      v);
+
+        // On stocke dans notre tableau
+        newCirclePositions.push_back(pos.x);
+        newCirclePositions.push_back(pos.y);
+        newCirclePositions.push_back(pos.z);
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_position);
+    glBufferSubData(
+        GL_ARRAY_BUFFER,
+        0,
+        newCirclePositions.size() * sizeof(GLfloat),
+        newCirclePositions.data()
+    );
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 //----------------------------------------
@@ -396,36 +455,6 @@ void clavier(unsigned char touche, int x, int y)
     materialShininess += .5;
     glutPostRedisplay();
     break;
-  case 'x':
-    /* Affichage en mode sommets seuls */
-    LightPosition.x -= .2;
-    glutPostRedisplay();
-    break;
-  case 'X':
-    /* Affichage en mode sommets seuls */
-    LightPosition.x += .2;
-    glutPostRedisplay();
-    break;
-  case 'y':
-    /* Affichage en mode sommets seuls */
-    LightPosition.y -= .2;
-    glutPostRedisplay();
-    break;
-  case 'Y':
-    /* Affichage en mode sommets seuls */
-    LightPosition.y += .2;
-    glutPostRedisplay();
-    break;
-  case 'z':
-    /* Affichage en mode sommets seuls */
-    LightPosition.z -= .2;
-    glutPostRedisplay();
-    break;
-  case 'Z':
-    /* Affichage en mode sommets seuls */
-    LightPosition.z += .2;
-    glutPostRedisplay();
-    break;
   case 'a':
     /* Affichage en mode sommets seuls */
     LightAmbientCoefficient -= .1;
@@ -434,6 +463,64 @@ void clavier(unsigned char touche, int x, int y)
   case 'A':
     /* Affichage en mode sommets seuls */
     LightAmbientCoefficient += .1;
+    glutPostRedisplay();
+    break;
+  
+  case '1':
+    selectedPointIndex = 0;
+    break;
+
+  case '2':
+    selectedPointIndex = 1;
+    break;
+  
+  case '3':
+    selectedPointIndex = 2;
+    break;
+
+  case '4':
+    selectedPointIndex = 3;
+    break;
+  
+   case 'x':
+    squarePositions[3 * selectedPointIndex + 0] += 0.1;
+    updateSquareVBO();
+    recalcCircle();
+    glutPostRedisplay();
+    break;
+
+  case 'X':
+    squarePositions[3 * selectedPointIndex + 0] -= 0.1;
+    updateSquareVBO();
+    recalcCircle();
+    glutPostRedisplay();
+    break;
+
+  case 'y':
+    squarePositions[3 * selectedPointIndex + 1] += 0.1;
+    updateSquareVBO();
+    recalcCircle();
+    glutPostRedisplay();
+    break;
+
+  case 'Y':
+    squarePositions[3 * selectedPointIndex + 1] -= 0.1;
+    updateSquareVBO();
+    recalcCircle();
+    glutPostRedisplay();
+    break;
+
+  case 'z':
+    squarePositions[3 * selectedPointIndex + 2] += 0.1;
+    updateSquareVBO();
+    recalcCircle();
+    glutPostRedisplay();
+    break;
+
+  case 'Z':
+    squarePositions[3 * selectedPointIndex + 2] -= 0.1;
+    updateSquareVBO();
+    recalcCircle();
     glutPostRedisplay();
     break;
 
