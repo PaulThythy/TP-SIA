@@ -1,4 +1,4 @@
-# TP-MGSI
+# TP-SIA
 TP - Synthèse d'image avancée
 
 ## Prérequis
